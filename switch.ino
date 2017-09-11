@@ -229,19 +229,19 @@ void handle_server_root()
     String name = String(i + 1);
     response += "<br><br>\r\n开关 #" + name + "：";
     if (state) {
-      response += "已打开 " + make_form(name, 0, "关闭");
+      response += "已打开 " + server_form(name, false, "关闭");
     } else {
-      response += "已关闭 " + make_form(name, 1, "打开");
+      response += "已关闭 " + server_form(name, true, "打开");
     }
     can_on = can_on || !state;
     can_off = can_off || state;
   }
 
   if (can_on) {
-    response += "<br><br>\r\n有开关已关闭，可以 " + make_form("", 1, "全部打开");
+    response += "<br><br>\r\n有开关已关闭，可以 " + server_form("", true, "全部打开");
   }
   if (can_off) {
-    response += "<br><br>\r\n有开关已打开，可以 " + make_form("", 0, "全部关闭");
+    response += "<br><br>\r\n有开关已打开，可以 " + server_form("", false, "全部关闭");
   }
 
   response += "<iframe id='backend' name='backend' style='display:none'></iframe></body></html>\r\n";
@@ -285,70 +285,41 @@ void handle_server_get_switch()
 void handle_server_post_switch()
 {
   String content = String("{\"success\":1,");
-  if (server.hasArg("switch")) {
-    String name = server.arg("switch");
-    int i = name.toInt() - 1;
-    if (i < 0 || i >= SWITCH_COUNT) {
-      // not found
-      server.send(404, JSON, ERROR_404);
-      return;
-    }
-    content += "\"switch\":" + name + ",\"state\":";
-    if (server.hasArg("state")) {
-      String state = server.arg("state");
-      DPRINTLN("[DEBUG] Server receive post switch #" + name + " to " + state);
-      switch (get_state_from_str(state)) {
-        case 0:
-          led_switch();
-          switch_turn(i, false);
-          content += "0}";
-          DPRINTLN("[DEBUG] Server send: " + content);
-          server.send(200, JSON, content);
-          return;
-        case 1:
-          led_switch();
-          switch_turn(i, true);
-          content += "1}";
-          DPRINTLN("[DEBUG] Server send: " + content);
-          server.send(200, JSON, content);
-          return;
-      }
-    }
-    // error
-    server.send(422, JSON, ERROR_422);
-    return;
-  }
-  content += "\"switches\":[";
   if (server.hasArg("state")) {
     String state = server.arg("state");
-    DPRINTLN("[DEBUG] Server receive post switchs to " + state);
-    switch (get_state_from_str(state)) {
-      case 0:
-        led_switch();
-        for (int i = 0; i < SWITCH_COUNT; i++) {
-          switch_turn(i, false);
-          content += "{\"switch\":" + String(i + 1) + ",\"state\":0}";
-          if (i < SWITCH_COUNT - 1) {
-            content += ",";
-          }
+    if (state == "1" || state == "0") {
+      bool b = (state == "1");
+      if (server.hasArg("switch")) {
+        String name = server.arg("switch");
+        int i = name.toInt() - 1;
+        if (i < 0 || i >= SWITCH_COUNT) {
+          // not found
+          server.send(404, JSON, ERROR_404);
+          return;
         }
-        content += "]}";
+        content += "\"switch\":" + name + ",\"state\":";
+        DPRINTLN("[DEBUG] Server receive post switch #" + name + " to " + state);
+        led_switch();
+        switch_turn(i, b);
+        content += state + "}";
         DPRINTLN("[DEBUG] Server send: " + content);
         server.send(200, JSON, content);
         return;
-      case 1:
-        led_switch();
-        for (int i = 0; i < SWITCH_COUNT; i++) {
-          switch_turn(i, true);
-          content += "{\"switch\":" + String(i + 1) + ",\"state\":1}";
-          if (i < SWITCH_COUNT - 1) {
-            content += ",";
-          }
+      }
+      content += "\"switches\":[";
+      DPRINTLN("[DEBUG] Server receive post switchs to " + state);
+      led_switch();
+      for (int i = 0; i < SWITCH_COUNT; i++) {
+        switch_turn(i, b);
+        content += "{\"switch\":" + String(i + 1) + ",\"state\":" + state + "}";
+        if (i < SWITCH_COUNT - 1) {
+          content += ",";
         }
-        content += "]}";
-        DPRINTLN("[DEBUG] Server send: " + content);
-        server.send(200, JSON, content);
-        return;
+      }
+      content += "]}";
+      DPRINTLN("[DEBUG] Server send: " + content);
+      server.send(200, JSON, content);
+      return;
     }
   }
   // error
@@ -360,12 +331,9 @@ void switch_reset()
   bool ret;
   DPRINTLN("[DEBUG] Switch RESET: ");
   led_ticker.attach(0.2, led_flip);
-//  ret = ESP.eraseConfig();
-//  DPRINTLN(ret);
   WiFi.begin("");
   WiFi.disconnect();
   delay(5000);
-//  ESP.restart();
   ESP.reset();
 }
 
@@ -482,7 +450,6 @@ void led_flip_switch()
 
 ///
 // 开关动作，只闪一次，只在网络正常时使用
-// led_ticker.attach(0.2, led_config);
 //
 void led_switch()
 {
@@ -568,17 +535,17 @@ void server_stop()
   DPRINTLN("[DEBUG] Server stop");
 }
 
-int get_state_from_str(String str)
+void server_turn(int i, String state, String content)
 {
-  if (str.equalsIgnoreCase("on")) {
-    return 1;
-  } else if (str.equalsIgnoreCase("off")) {
-    return 0;
-  }
-  return -1;
+  bool b = (state == "1");
+  led_switch();
+  switch_turn(i, b);
+  content += state + "}";
+  DPRINTLN("[DEBUG] Server send: " + content);
+  server.send(200, JSON, content);
 }
 
-String make_form(String i, int state, String name)
+String server_form(String i, bool state, String name)
 {
   String content = String("<form action='/switch' method='post' target='backend'>");
   if (i != "") {
@@ -586,7 +553,7 @@ String make_form(String i, int state, String name)
   }
   if (state != -1) {
     content += "<input type='hidden' name='state' value='";
-    content += state ? "on" : "off";
+    content += state ? "1" : "0";
     content += "'>";
   }
   content += "<input type='submit' value='" + name + "' onclick='this.parentElement.submit();window.location.reload();return false'></form><br>\r\n";
