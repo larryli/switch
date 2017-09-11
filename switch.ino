@@ -50,8 +50,7 @@ static const uint8_t WIFI_CONFIG = 3;
 
 static uint8_t wifi_state;
 
-static unsigned int led_ticker_counter;
-static unsigned int led_ticker_count;
+static int led_tick;
 static Ticker led_ticker;
 
 static const char *JSON = "application/json";
@@ -91,6 +90,7 @@ void setup_switchs()
 void setup_led()
 {
   pinMode(WIFI_LED, OUTPUT);
+  digitalWrite(WIFI_LED, LOW);
 }
 
 void setup_reset()
@@ -123,7 +123,7 @@ void setup_server()
   server.on("/", handle_server_root);
   server.on("/switch", HTTP_GET, handle_server_get_switch);
   server.on("/switch", HTTP_POST, handle_server_post_switch);
-  //server.onNotFound(handle_server_not_found);
+  // server.onNotFound(handle_server_not_found);
 }
 
 void handle_reset()
@@ -141,12 +141,14 @@ bool handle_irrecv()
     switch (ircode) {
       case OFF_IRCODE:
         DPRINTLN("[DEBUG] IR off");
+        led_switch();
         for (int i = 0; i < SWITCH_COUNT; i++) {
           switch_turn(i, false);
         }
         break;
       case ON_IRCODE:
         DPRINTLN("[DEBUG] IR on");
+        led_switch();
         for (int i = 0; i < SWITCH_COUNT; i++) {
           switch_turn(i, true);
         }
@@ -160,6 +162,7 @@ bool handle_irrecv()
           if (ircode == SWITCH_IRCODES[i]) {
             DPRINT("[DEBUG] IR switch #");
             DPRINTLN(i + 1);
+            led_switch();
             switch_toggle(i);
           }
         }
@@ -296,12 +299,14 @@ void handle_server_post_switch()
       DPRINTLN("[DEBUG] Server receive post switch #" + name + " to " + state);
       switch (get_state_from_str(state)) {
         case 0:
+          led_switch();
           switch_turn(i, false);
           content += "0}";
           DPRINTLN("[DEBUG] Server send: " + content);
           server.send(200, JSON, content);
           return;
         case 1:
+          led_switch();
           switch_turn(i, true);
           content += "1}";
           DPRINTLN("[DEBUG] Server send: " + content);
@@ -319,6 +324,7 @@ void handle_server_post_switch()
     DPRINTLN("[DEBUG] Server receive post switchs to " + state);
     switch (get_state_from_str(state)) {
       case 0:
+        led_switch();
         for (int i = 0; i < SWITCH_COUNT; i++) {
           switch_turn(i, false);
           content += "{\"switch\":" + String(i + 1) + ",\"state\":0}";
@@ -331,6 +337,7 @@ void handle_server_post_switch()
         server.send(200, JSON, content);
         return;
       case 1:
+        led_switch();
         for (int i = 0; i < SWITCH_COUNT; i++) {
           switch_turn(i, true);
           content += "{\"switch\":" + String(i + 1) + ",\"state\":1}";
@@ -351,14 +358,14 @@ void handle_server_post_switch()
 void switch_reset()
 {
   bool ret;
-  DPRINT("[DEBUG] Switch RESET: ");
-  led_set(true, 100, 0);
-  ret = ESP.eraseConfig();
-  DPRINTLN(ret);
+  DPRINTLN("[DEBUG] Switch RESET: ");
+  led_ticker.attach(0.2, led_flip);
+//  ret = ESP.eraseConfig();
+//  DPRINTLN(ret);
   WiFi.begin("");
   WiFi.disconnect();
   delay(5000);
-  //  ESP.restart();
+//  ESP.restart();
   ESP.reset();
 }
 
@@ -399,87 +406,151 @@ bool switch_turn(unsigned int i, bool state)
   return false;
 }
 
-void led_tick()
+void led_flip_connect()
 {
-  int state = !digitalRead(WIFI_LED);
-  if (state == LOW && (led_ticker_count == 0 || ++led_ticker_counter % led_ticker_count == 0)) {
+  ++led_tick;
+  if (led_tick == 1 || led_tick == 3 || led_tick == 5) {
     digitalWrite(WIFI_LED, LOW);
-  } else {
+  } else if (led_tick == 2 || led_tick == 4) {
     digitalWrite(WIFI_LED, HIGH);
+  } else if (led_tick >= 10) {
+    digitalWrite(WIFI_LED, HIGH);
+    led_tick = 0;
   }
 }
 
-void led_set(bool state, int ms, int count)
+///
+// 正在联网，闪两下，亮 0.5s
+//
+void led_connect()
 {
-  if (ms == 0) {
-    led_ticker.detach();
-    digitalWrite(WIFI_LED, state ? LOW : HIGH);
-  } else if (state) {
-    float s = ms / 1000.0;
-    led_ticker_count = count;
-    led_ticker.attach(s, led_tick);
+  led_tick = 0;
+  digitalWrite(WIFI_LED, HIGH);
+  led_ticker.attach(0.1, led_flip_connect);
+}
+
+///
+// 联网正常，常亮
+//
+void led_connected()
+{
+  led_ticker.detach();
+  digitalWrite(WIFI_LED, LOW);
+}
+
+void led_flip_disconnected()
+{
+  ++led_tick;
+  if (led_tick == 1) {
+    digitalWrite(WIFI_LED, HIGH);
+  } else if (led_tick >= 4) {
+    digitalWrite(WIFI_LED, LOW);
+    led_tick = 0;
   }
 }
 
-/**
-   连接已配置的 Wifi
-*/
+///
+// 联网错误，慢闪，亮 0.5 秒，灭 1.5 秒
+//
+void led_disconnected()
+{
+  led_tick = 0;
+  digitalWrite(WIFI_LED, LOW);
+  led_ticker.attach(0.5, led_flip_disconnected);
+}
+
+void led_flip()
+{
+  int state = digitalRead(WIFI_LED);
+  digitalWrite(WIFI_LED, !state);
+}
+
+///
+// 配网状态，快闪
+//
+void led_config()
+{
+  digitalWrite(WIFI_LED, HIGH);
+  led_ticker.attach(0.3, led_flip);
+}
+
+void led_flip_switch()
+{
+  digitalWrite(WIFI_LED, LOW);
+  led_ticker.detach();
+}
+
+///
+// 开关动作，只闪一次，只在网络正常时使用
+// led_ticker.attach(0.2, led_config);
+//
+void led_switch()
+{
+  if (wifi_state == WIFI_CONNECTED) {
+    digitalWrite(WIFI_LED, HIGH);
+    led_ticker.attach(0.1, led_flip_switch);
+  }
+}
+
+///
+// 连接已配置的 Wifi
+//
 void wifi_connect()
 {
   DPRINTLN("[DEBUG] Wifi connects: " + WiFi.SSID());
   wifi_state = WIFI_CONNECTING;
   WiFi.begin();
-  led_set(true, 200, 0);
+  led_connect();
 }
 
-/**
-   配置 Wifi 信息
-*/
+///
+// 配置 Wifi 信息
+//
 void wifi_config()
 {
   DPRINTLN("[DEBUG] Wifi config");
   wifi_state = WIFI_CONFIG;
   WiFi.beginSmartConfig();
-  led_set(true, 500, 0);
+  led_config();
 }
 
-/**
-   配置 Wifi 信息成功
-*/
+///
+// 配置 Wifi 信息成功
+//
 void wifi_received()
 {
   DPRINTLN("[DEBUG] Wifi config received");
   wifi_connect(); // 连网
 }
 
-/**
-   密码错误，Wifi 连接失败
-*/
+///
+// 密码错误，Wifi 连接失败
+//
 void wifi_failed()
 {
   DPRINTLN("[DEBUG] Wifi connect failed");
   wifi_config();  // 配网
 }
 
-/**
-   Wifi 未连接
-*/
+///
+// Wifi 未连接
+//
 void wifi_disconnected()
 {
   DPRINTLN("[DEBUG] Wifi disconnected");
   wifi_state = WIFI_DISCONNECTED;
-  led_set(true, 200, 10);
+  led_disconnected();
 }
 
-/**
-   Wifi 连接成功
-*/
+///
+// Wifi 连接成功
+//
 void wifi_connected()
 {
-  DPRINT("[Debug] Wifi connected, IP address: ");
+  DPRINT("[DEBUG] Wifi connected, IP address: ");
   DPRINTLN(WiFi.localIP());
   wifi_state = WIFI_CONNECTED;
-  led_set(true, 0, 0);
+  led_connected();
   server_start();
 }
 
