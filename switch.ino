@@ -57,17 +57,44 @@ static Ticker led_ticker;
 
 static const char *TYPE_JSON = "application/json";
 static const char *TYPE_HTML = "text/html";
+static const char *TYPE_CSS = "text/css";
+static const char *TYPE_JS = "application/javascript";
+static const char *HEADER_CACHE = "Cache-Control";
+static const char *CACHE_NONE = "no-cache";
+static const char *CACHE_DAY = "max-age=86400";
 static const char *ERROR_404 = "{\"success\":0,\"message\":\"Not Found\"}";
 static const char *ERROR_422 = "{\"success\":0,\"message\":\"Unprocessable Entity\"}";
-static const char *HTML_HEAD = "<!DOCTYPE HTML>\r\n<html>\r\n<head>\r\n<meta charset='utf-8'>\r\n\
-<title>智能开关</title>\r\n<meta name='viewport' content='width=device-width, initial-scale=1.0'>\r\n\
-<style>form{display:inline-block}</style>\r\n</head>\r\n<body>\r\n";
-static const char *HTML_FOOT = "<iframe id='backend' name='backend' style='display:none'></iframe>\r\n\
-<script>function turn(t){var f=t.parentNode,d=new FormData();\
+static const char *HTML_HEAD = "<!DOCTYPE HTML>\n<html>\n<head>\n<meta charset='utf-8'>\n\
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>\n<title>智能开关</title>\n\
+<link href='/style.css' rel='stylesheet'>\n</head>\n<body>\n<h1>智能开关</h1>\n";
+static const char *HTML_FOOT = "<iframe id='backend' name='backend' style='display:none'></iframe>\n\
+<script src='/turn.js'></script>\n</body>\n</html>";
+static const char *STYLE_CSS = "*{margin:0;padding:0}body{background-color:#f8f8f8}h1{text-align:center;margin:1em}\
+h2{margin:.77em 0 .3em 0;padding:0 15px;color:#999;font-size:14px}\
+dl{margin:0;background-color:#FFF;line-height:1.47;font-size:17px;overflow:hidden;position:relative}\
+dl:before{content:'';position:absolute;left:0;top:0;right:0;height:1px;border-top:1px solid #e5e5e5;\
+color:#e5e5e5;transform-origin:0 0;transform:scaleY(0.5);z-index:2}\
+dl:after{content:'';position:absolute;left:0;bottom:0;right:0;height:1px;border-bottom:1px solid #e5e5e5;\
+color:#e5e5e5;transform-origin:0 100%;transform:scaleY(0.5);z-index:2}\
+div{padding:10px 15px;position:relative;display:flex;align-items:center}div:first-child:before{display:none}\
+div:before{content:'';position:absolute;left:15px;top:0;right:0;height:1px;border-top:1px solid #e5e5e5;\
+color:#e5e5e5;transform-origin:0 0;transform:scaleY(0.5);z-index:2}\
+dt{flex:1}dd{font-size:0;text-align:right;color:#999}dd form{display:inline-block}\
+dd label{position:relative;display:inline-block;width:60px;height:34px}dd label input{display:none}\
+dd span{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#ccc;border-radius:34px}\
+dd span:before{position:absolute;content:'';height:26px;width:26px;left:4px;bottom:4px;background-color:white;border-radius:50%}\
+dd span.on{background-color:#2196F3;box-shadow:0 0 1px #2196F3}dd span.on:before{transform:translateX(26px)}\
+form>input{width:90%;border:0;background-color:#1AAD19;position:relative;display:block;margin:0 auto;padding:0 14px;\
+box-sizing:border-box;font-size:18px;text-align:center;text-decoration:none;color:#FFF;line-height:2.56;border-radius:5px;overflow:hidden}\
+form>input.off{background-color:#E64340}form>input:after{content:'';width:200%;height:200%;position:absolute;top:0;\
+left:0;border:1px solid rgba(0,0,0,0.2);transform:scale(0.5);transform-origin:0 0;box-sizing:border-box;border-radius:10px}\
+h2+form,form+form{margin-top:15px}";
+static const char *TURN_JS = "function turn(t){var f=t.parentNode,d=new FormData();\
 for(var i=0;i<f.children.length;i++){var v=f.children[i];if(v.name!=undefined&&v.name!='')d.append(v.name,v.value)}\
 var r=new XMLHttpRequest();\
 r.onreadystatechange=function(){if(r.readyState==4&&r.status==200)window.location.reload(true)};\
-r.open(f.method,f.action);r.send(d);return false}</script>\r\n</body>\r\n</html>";
+r.open(f.method,f.action);r.send(d);return false}\
+function turn2(t){return turn(t.parentNode)}";
 
 static ESP8266WebServer server(80);
 
@@ -145,6 +172,8 @@ void setup_wifi()
 void setup_server()
 {
   server.on("/", handle_server_root);
+  server.on("/style.css", handle_server_style_css);
+  server.on("/turn.js", handle_server_turn_js);
   server.on("/switch", HTTP_GET, handle_server_get_switch);
   server.on("/switch", HTTP_POST, handle_server_post_switch);
 }
@@ -239,37 +268,57 @@ bool handle_wifi()
 void handle_server_root()
 {
   bool can_on, can_off;
-
-  DPRINTLN("[DEBUG] Server receive get html");
   String content = String(HTML_HEAD);
+  
+  DPRINTLN("[DEBUG] Server receive get home page");
+  server.sendHeader(HEADER_CACHE, CACHE_NONE);
   can_on = can_off = false;
+  content += "<h2>开关列表</h2>\n<dl>\n";
   for (int i = 0; i < SWITCH_COUNT; i++) {
     bool state = (digitalRead(SWITCHS[i]) == SWITCH_ON);
     String name = String(i + 1);
-    content += "<br><br>\r\n开关 #" + name + "：";
+    content += "<div>\n<dt>开关 #" + name + "</dt>\n<dd>";
     if (state) {
-      content += "已打开 " + server_form(name, false, "关闭");
+      content += server_form(name, false, "");
     } else {
-      content += "已关闭 " + server_form(name, true, "打开");
+      content += server_form(name, true, "");
     }
+    content += "</dd>\n</div>\n";
     can_on = can_on || !state;
     can_off = can_off || state;
   }
 
+  content += "</dl>\n<h2>批量开关</h2>\n";
   if (can_on) {
-    content += "<br><br>\r\n有开关已关闭，可以 " + server_form("", true, "全部打开");
+    content += server_form("", true, "全部打开");
   }
   if (can_off) {
-    content += "<br><br>\r\n有开关已打开，可以 " + server_form("", false, "全部关闭");
+    content += server_form("", false, "全部关闭");
   }
 
   content += HTML_FOOT;
   server.send(200, TYPE_HTML, content);
 }
 
+void handle_server_style_css()
+{
+  DPRINTLN("[DEBUG] Server receive get style.css");
+  server.sendHeader(HEADER_CACHE, CACHE_DAY);
+  server.send(200, TYPE_CSS, STYLE_CSS);
+}
+
+void handle_server_turn_js()
+{
+  DPRINTLN("[DEBUG] Server receive get turn.js");
+  server.sendHeader(HEADER_CACHE, CACHE_DAY);
+  server.send(200, TYPE_JS, TURN_JS);
+}
+
 void handle_server_get_switch()
 {
   String content = String("{\"success\":1,");
+
+  server.sendHeader(HEADER_CACHE, CACHE_NONE);
   if (server.hasArg("switch")) {
     String name = server.arg("switch");
     int i = name.toInt() - 1;
@@ -303,6 +352,8 @@ void handle_server_get_switch()
 void handle_server_post_switch()
 {
   String content = String("{\"success\":1,");
+
+  server.sendHeader(HEADER_CACHE, CACHE_NONE);
   if (server.hasArg("state")) {
     String state = server.arg("state");
     if (state == "1" || state == "0") {
@@ -563,16 +614,24 @@ void server_turn(int i, String state, String content)
 
 String server_form(String i, bool state, String name)
 {
-  String content = String("<form action='/switch' method='post' target='backend'>\r\n");
+  String content = String("<form action='/switch' method='post' target='backend'>\n");
+  content += "<input type='hidden' name='state' value='";
+  content += state ? "1" : "0";
+  content += "'>\n";
   if (i != "") {
-    content += "<input type='hidden' name='switch' value='" + i + "'>\r\n";
+    content += "<input type='hidden' name='switch' value='" + i + "'>\n";
+    content += "<label><input type='submit' onclick='return turn2(this)'><span";
+    if (!state) {
+      content += " class='on'";
+    }
+    content += "></span></label>\n</form>\n";
+    return content;
   }
-  if (state != -1) {
-    content += "<input type='hidden' name='state' value='";
-    content += state ? "1" : "0";
-    content += "'>\r\n";
+  content += "<input type='submit' value='" + name + "'";
+  if (!state) {
+    content += " class='off'";
   }
-  content += "<input type='submit' value='" + name + "' onclick='return turn(this)'>\r\n</form><br>\r\n";
+  content += " onclick='return turn(this)'>\n</form>\n";
   return content;
 }
 
