@@ -29,7 +29,7 @@
 #define DPRINTLN(...)
 #endif
 
-static const uint8_t SWITCHS[] = {D1, D2, D6, D7, D0, D3, D9, D10};
+static const uint8_t SWITCHES[] = {D1, D2, D6, D7, D0, D3, D9, D10};
 static const uint8_t IR_RECV = D5;
 static const uint8_t WIFI_LED = D4;
 static const uint8_t RESET_BTN = D3;
@@ -67,8 +67,7 @@ static const char *ERROR_422 = "{\"success\":0,\"message\":\"Unprocessable Entit
 static const char *HTML_HEAD = "<!DOCTYPE HTML>\n<html>\n<head>\n<meta charset='utf-8'>\n\
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n<title>智能开关</title>\n\
 <link href='/style.css' rel='stylesheet'>\n</head>\n<body>\n<h1>智能开关</h1>\n";
-static const char *HTML_FOOT = "<iframe id='backend' name='backend' style='display:none'></iframe>\n\
-<script src='/turn.js'></script>\n</body>\n</html>";
+static const char *HTML_FOOT = "<script src='/turn.js'></script>\n</body>\n</html>";
 static const char *STYLE_CSS = "*{margin:0;padding:0}body{background-color:#f8f8f8}h1{text-align:center;margin:1em}\
 h2{margin:.77em 0 .3em 0;padding:0 15px;color:#999;font-size:14px}\
 dl{margin:0;background-color:#FFF;line-height:1.47;font-size:17px;overflow:hidden;position:relative}\
@@ -88,11 +87,16 @@ form>input{width:90%;border:0;background-color:#1AAD19;position:relative;display
 box-sizing:border-box;font-size:18px;text-align:center;text-decoration:none;color:#FFF;line-height:2.56;border-radius:5px;overflow:hidden}\
 form>input.off{background-color:#E64340}form>input:after{content:'';width:200%;height:200%;position:absolute;top:0;\
 left:0;border:1px solid rgba(0,0,0,0.2);transform:scale(0.5);transform-origin:0 0;box-sizing:border-box;border-radius:10px}\
-h2+form,form+form{margin-top:15px}";
+form>input{margin-top:15px}.hidden{display:none}";
 static const char *TURN_JS = "function turn(t){var f=t.parentNode,d=new FormData();\
 for(var i=0;i<f.children.length;i++){var v=f.children[i];if(v.name!=undefined&&v.name!='')d.append(v.name,v.value)}\
-var r=new XMLHttpRequest();\
-r.onreadystatechange=function(){if(r.readyState==4&&r.status==200)window.location.reload(true)};\
+var r=new XMLHttpRequest();r.onreadystatechange=function(){if(r.readyState==4&&r.status==200){\
+var o=JSON.parse(r.responseText);if(o.success!=undefined&&o.success==1){\
+var on=false,off=false;for(var i=0;i<o.switches.length;i++){\
+var p=document.getElementById('switch-'+o.switches[i].switch),s=o.switches[i].state==1;\
+p.querySelector('input[name=state]').value=s?0:1;p.querySelector('span').className=s?'on':'';\
+on=on||!s;off=off||s}document.getElementById('switch-on').className=on?'':'hidden';\
+document.getElementById('switch-off').className=off?'':'hidden'}}};\
 r.open(f.method,f.action);r.send(d);return false}\
 function turn2(t){return turn(t.parentNode)}";
 
@@ -103,7 +107,7 @@ static String mdns_name;
 void setup()
 {
   setup_debug();
-  setup_switchs();
+  setup_switches();
   setup_led();
   setup_reset();
   setup_irrecv();
@@ -122,11 +126,11 @@ void loop()
   server.handleClient();
 }
 
-void setup_switchs()
+void setup_switches()
 {
   for (int i = 0; i < SWITCH_COUNT; i++) {
-    pinMode(SWITCHS[i], OUTPUT);
-    digitalWrite(SWITCHS[i], SWITCH_OFF);
+    pinMode(SWITCHES[i], OUTPUT);
+    digitalWrite(SWITCHES[i], SWITCH_OFF);
   }
 }
 
@@ -269,33 +273,24 @@ void handle_server_root()
 {
   bool can_on, can_off;
   String content = String(HTML_HEAD);
-  
+
   DPRINTLN("[DEBUG] Server receive get home page");
   server.sendHeader(HEADER_CACHE, CACHE_NONE);
   can_on = can_off = false;
   content += "<h2>开关列表</h2>\n<dl>\n";
   for (int i = 0; i < SWITCH_COUNT; i++) {
-    bool state = (digitalRead(SWITCHS[i]) == SWITCH_ON);
+    bool state = (digitalRead(SWITCHES[i]) == SWITCH_ON);
     String name = String(i + 1);
     content += "<div>\n<dt>开关 #" + name + "</dt>\n<dd>";
-    if (state) {
-      content += server_form(name, false, "");
-    } else {
-      content += server_form(name, true, "");
-    }
+    content += server_form1(name, !state, state ? "关闭" : "打开");
     content += "</dd>\n</div>\n";
     can_on = can_on || !state;
     can_off = can_off || state;
   }
 
   content += "</dl>\n<h2>批量开关</h2>\n";
-  if (can_on) {
-    content += server_form("", true, "全部打开");
-  }
-  if (can_off) {
-    content += server_form("", false, "全部关闭");
-  }
-
+  content += server_form2(can_on, true, "全部打开");
+  content += server_form2(can_off, false, "全部关闭");
   content += HTML_FOOT;
   server.send(200, TYPE_HTML, content);
 }
@@ -328,23 +323,14 @@ void handle_server_get_switch()
     }
     DPRINTLN("[DEBUG] Server receive get switch #" + name);
     content += "\"switch\":" + name + ",\"state\":";
-    content += (digitalRead(SWITCHS[i]) == SWITCH_ON) ? "1" : "0";
+    content += (digitalRead(SWITCHES[i]) == SWITCH_ON) ? "1" : "0";
     content += "}";
     DPRINTLN("[DEBUG] Server send: " + content);
     server.send(200, TYPE_JSON, content);
     return;
   }
-  DPRINTLN("[DEBUG] Server receive get switchs");
-  content += "\"switches\":[";
-  for (int i = 0; i < SWITCH_COUNT; i++) {
-    content += "{\"switch\":" + String(i + 1) + ",\"state\":";
-    content += (digitalRead(SWITCHS[i]) == SWITCH_ON) ? "1" : "0";
-    content += "}";
-    if (i < SWITCH_COUNT - 1) {
-      content += ",";
-    }
-  }
-  content += "]}";
+  DPRINTLN("[DEBUG] Server receive get switches");
+  content += server_get_switches() + "}";
   DPRINTLN("[DEBUG] Server send: " + content);
   server.send(200, TYPE_JSON, content);
 }
@@ -369,13 +355,17 @@ void handle_server_post_switch()
         DPRINTLN("[DEBUG] Server receive post switch #" + name + " to " + state);
         led_switch();
         switch_turn(i, b);
-        content += state + "}";
+        content += state;
+        if (server.hasArg("switches")) {
+          content += "," + server_get_switches();
+        }
+        content += "}";
         DPRINTLN("[DEBUG] Server send: " + content);
         server.send(200, TYPE_JSON, content);
         return;
       }
       content += "\"switches\":[";
-      DPRINTLN("[DEBUG] Server receive post switchs to " + state);
+      DPRINTLN("[DEBUG] Server receive post switches to " + state);
       led_switch();
       for (int i = 0; i < SWITCH_COUNT; i++) {
         switch_turn(i, b);
@@ -406,12 +396,12 @@ void switch_reset()
 bool switch_toggle(unsigned int i)
 {
   if (i < SWITCH_COUNT) {
-    int data = !digitalRead(SWITCHS[i]);
+    int data = !digitalRead(SWITCHES[i]);
     bool state = (data == SWITCH_ON);
     DPRINT("[DEBUG] Switch #");
     DPRINT(i + 1);
     DPRINTLN(state ? " on" : " off");
-    digitalWrite(SWITCHS[i], data);
+    digitalWrite(SWITCHES[i], data);
     return state ? true : false;
   }
   return false;
@@ -420,20 +410,20 @@ bool switch_toggle(unsigned int i)
 bool switch_turn(unsigned int i, bool state)
 {
   if (i < SWITCH_COUNT) {
-    int data = digitalRead(SWITCHS[i]);
+    int data = digitalRead(SWITCHES[i]);
     if (state) {
       if (data == SWITCH_OFF) {
         DPRINT("[DEBUG] Switch #");
         DPRINT(i + 1);
         DPRINTLN(" on");
-        digitalWrite(SWITCHS[i], SWITCH_ON);
+        digitalWrite(SWITCHES[i], SWITCH_ON);
         return true;
       }
     } else if (data == SWITCH_ON) {
       DPRINT("[DEBUG] Switch #");
       DPRINT(i + 1);
       DPRINTLN(" off");
-      digitalWrite(SWITCHS[i], SWITCH_OFF);
+      digitalWrite(SWITCHES[i], SWITCH_OFF);
       return true;
     }
   }
@@ -612,21 +602,48 @@ void server_turn(int i, String state, String content)
   server.send(200, TYPE_JSON, content);
 }
 
-String server_form(String i, bool state, String name)
+String server_get_switches()
 {
-  String content = String("<form action='/switch' method='post' target='backend'>\n");
+  String content = String("\"switches\":[");
+  for (int i = 0; i < SWITCH_COUNT; i++) {
+    content += "{\"switch\":" + String(i + 1) + ",\"state\":";
+    content += (digitalRead(SWITCHES[i]) == SWITCH_ON) ? "1" : "0";
+    content += "}";
+    if (i < SWITCH_COUNT - 1) {
+      content += ",";
+    }
+  }
+  content += "]";
+  return content;
+}
+
+String server_form1(String i, bool state, String name)
+{
+  String content = String("<form action='/switch' method='post' id='switch-");
+  content += i + "'>\n<input type='hidden' name='switches' value='1'>\n";
+  content += "<input type='hidden' name='switch' value='" + i + "'>\n";
   content += "<input type='hidden' name='state' value='";
   content += state ? "1" : "0";
   content += "'>\n";
-  if (i != "") {
-    content += "<input type='hidden' name='switch' value='" + i + "'>\n";
-    content += "<label><input type='submit' onclick='return turn2(this)'><span";
-    if (!state) {
-      content += " class='on'";
-    }
-    content += "></span></label>\n</form>\n";
-    return content;
+  content += "<label><input type='submit' value='" + name + "' onclick='return turn2(this)'><span";
+  if (!state) {
+    content += " class='on'";
   }
+  content += "></span></label>\n</form>\n";
+  return content;
+}
+
+String server_form2(bool show, bool state, String name)
+{
+  String content = String("<form action='/switch' method='post' id='switch-");
+  content += state ? "on" : "off";
+  content += "'";
+  if (!show) {
+    content += " class='hidden'";
+  }
+  content += ">\n<input type='hidden' name='state' value='";
+  content += state ? "1" : "0";
+  content += "'>\n";
   content += "<input type='submit' value='" + name + "'";
   if (!state) {
     content += " class='off'";
