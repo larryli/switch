@@ -4,9 +4,10 @@
 #include <Ticker.h>
 #include <IRrecv.h> // @see https://github.com/markszabo/IRremoteESP8266
 
-#define SWITCH_COUNT 2  // 继电器数量
-#define SWITCH_TRIG_LOW // 继电器低电平触发
-#define SWITCH_DEBUG // 开启 TX0 调试输出
+#define SWITCH_COUNT 2       // 继电器数量
+#define SWITCH_TRIG_LOW      // 继电器低电平触发
+#define SWITCH_DEBUG         // 开启 TX0 调试输出
+#define SWITCH_NAME "switch" // mDNS 名称
 
 #ifdef SWITCH_TRIG_LOW
 #define SWITCH_ON LOW
@@ -66,6 +67,7 @@ for(var i=0;i<f.children.length;i++){var v=f.children[i];if(v.name!=undefined&&v
 var r=new XMLHttpRequest();\
 r.onreadystatechange=function(){if(r.readyState==4&&r.status==200)window.location.reload(true)};\
 r.open(f.method,f.action);r.send(d);return false}</script>\r\n</body>\r\n</html>";
+
 static ESP8266WebServer server(80);
 
 void setup()
@@ -520,6 +522,7 @@ void wifi_connected()
   wifi_state = WIFI_CONNECTED;
   led_connected();
   server_start();
+  mdns_setup();
 }
 
 void server_start()
@@ -559,5 +562,16 @@ String server_form(String i, bool state, String name)
   }
   content += "<input type='submit' value='" + name + "' onclick='return turn(this)'>\r\n</form><br>\r\n";
   return content;
+}
+
+void mdns_setup()
+{
+  if (!MDNS.begin(SWITCH_NAME)) {
+    DPRINTLN("[DEBUG] mDNS error");
+    return;
+  }
+  MDNS.addService("http", "tcp", 80);
+  DPRINT("[DEBUG] mDNS success: ");
+  DPRINTLN(SWITCH_NAME);
 }
 
