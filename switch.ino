@@ -2,7 +2,6 @@
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
 #include <Ticker.h>
-#include <FS.h>
 #include <IRrecv.h> // @see https://github.com/markszabo/IRremoteESP8266
 
 #define SWITCH_COUNT 2  // 继电器数量
@@ -18,7 +17,7 @@
 #endif
 
 #ifdef SWITCH_DEBUG
-#define setup_debug() Serial.begin(115200);  \
+#define setup_debug()  Serial.begin(115200);  \
   Serial.println()
 #define DPRINT(...)    Serial.print(__VA_ARGS__)
 #define DPRINTLN(...)  Serial.println(__VA_ARGS__)
@@ -54,9 +53,19 @@ static uint8_t wifi_state;
 static int led_tick;
 static Ticker led_ticker;
 
-static const char *JSON = "application/json";
+static const char *TYPE_JSON = "application/json";
+static const char *TYPE_HTML = "text/html";
 static const char *ERROR_404 = "{\"success\":0,\"message\":\"Not Found\"}";
 static const char *ERROR_422 = "{\"success\":0,\"message\":\"Unprocessable Entity\"}";
+static const char *HTML_HEAD = "<!DOCTYPE HTML>\r\n<html>\r\n<head>\r\n<meta charset='utf-8'>\r\n\
+<title>智能开关</title>\r\n<meta name='viewport' content='width=device-width, initial-scale=1.0'>\r\n\
+<style>form{display:inline-block}</style>\r\n</head>\r\n<body>\r\n";
+static const char *HTML_FOOT = "<iframe id='backend' name='backend' style='display:none'></iframe>\r\n\
+<script>function turn(t){var f=t.parentNode,d=new FormData();\
+for(var i=0;i<f.children.length;i++){var v=f.children[i];if(v.name!=undefined&&v.name!='')d.append(v.name,v.value)}\
+var r=new XMLHttpRequest();\
+r.onreadystatechange=function(){if(r.readyState==4&&r.status==200)window.location.reload(true)};\
+r.open(f.method,f.action);r.send(d);return false}</script>\r\n</body>\r\n</html>";
 static ESP8266WebServer server(80);
 
 void setup()
@@ -106,9 +115,9 @@ void setup_irrecv()
   delay(10);
 }
 
-/**
-   Wifi 配置
-*/
+///
+// Wifi 配置
+//
 void setup_wifi()
 {
   WiFi.mode(WIFI_STA);
@@ -124,11 +133,6 @@ void setup_server()
   server.on("/", handle_server_root);
   server.on("/switch", HTTP_GET, handle_server_get_switch);
   server.on("/switch", HTTP_POST, handle_server_post_switch);
-  server.onNotFound([]() {
-    if (!handle_server_file(server.uri())) {
-      server.send(404, "text/plain", "Not Found");
-    }
-  });
 }
 
 void handle_reset()
@@ -223,34 +227,30 @@ void handle_server_root()
   bool can_on, can_off;
 
   DPRINTLN("[DEBUG] Server receive get html");
-
-  String response = String("<!DOCTYPE HTML>\r\n<html><head><meta charset='utf-8'>\r\n");
-  response += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>\r\n";
-  response += "<title>智能开关</title><link href='/style.css' rel='stylesheet' type='text/css'></head><body>\r\n";
-
+  String content = String(HTML_HEAD);
   can_on = can_off = false;
   for (int i = 0; i < SWITCH_COUNT; i++) {
     bool state = (digitalRead(SWITCHS[i]) == SWITCH_ON);
     String name = String(i + 1);
-    response += "<br><br>\r\n开关 #" + name + "：";
+    content += "<br><br>\r\n开关 #" + name + "：";
     if (state) {
-      response += "已打开 " + server_form(name, false, "关闭");
+      content += "已打开 " + server_form(name, false, "关闭");
     } else {
-      response += "已关闭 " + server_form(name, true, "打开");
+      content += "已关闭 " + server_form(name, true, "打开");
     }
     can_on = can_on || !state;
     can_off = can_off || state;
   }
 
   if (can_on) {
-    response += "<br><br>\r\n有开关已关闭，可以 " + server_form("", true, "全部打开");
+    content += "<br><br>\r\n有开关已关闭，可以 " + server_form("", true, "全部打开");
   }
   if (can_off) {
-    response += "<br><br>\r\n有开关已打开，可以 " + server_form("", false, "全部关闭");
+    content += "<br><br>\r\n有开关已打开，可以 " + server_form("", false, "全部关闭");
   }
 
-  response += "<script type='text/javascript' src='/submit.js' charset='utf-8'></script></body></html>\r\n";
-  server.send(200, "text/html", response);
+  content += HTML_FOOT;
+  server.send(200, TYPE_HTML, content);
 }
 
 void handle_server_get_switch()
@@ -260,8 +260,7 @@ void handle_server_get_switch()
     String name = server.arg("switch");
     int i = name.toInt() - 1;
     if (i < 0 || i >= SWITCH_COUNT) {
-      // not found
-      server.send(404, JSON, ERROR_404);
+      server.send(404, TYPE_JSON, ERROR_404);
       return;
     }
     DPRINTLN("[DEBUG] Server receive get switch #" + name);
@@ -269,7 +268,7 @@ void handle_server_get_switch()
     content += (digitalRead(SWITCHS[i]) == SWITCH_ON) ? "1" : "0";
     content += "}";
     DPRINTLN("[DEBUG] Server send: " + content);
-    server.send(200, JSON, content);
+    server.send(200, TYPE_JSON, content);
     return;
   }
   DPRINTLN("[DEBUG] Server receive get switchs");
@@ -284,7 +283,7 @@ void handle_server_get_switch()
   }
   content += "]}";
   DPRINTLN("[DEBUG] Server send: " + content);
-  server.send(200, JSON, content);
+  server.send(200, TYPE_JSON, content);
 }
 
 void handle_server_post_switch()
@@ -298,8 +297,7 @@ void handle_server_post_switch()
         String name = server.arg("switch");
         int i = name.toInt() - 1;
         if (i < 0 || i >= SWITCH_COUNT) {
-          // not found
-          server.send(404, JSON, ERROR_404);
+          server.send(404, TYPE_JSON, ERROR_404);
           return;
         }
         content += "\"switch\":" + name + ",\"state\":";
@@ -308,7 +306,7 @@ void handle_server_post_switch()
         switch_turn(i, b);
         content += state + "}";
         DPRINTLN("[DEBUG] Server send: " + content);
-        server.send(200, JSON, content);
+        server.send(200, TYPE_JSON, content);
         return;
       }
       content += "\"switches\":[";
@@ -323,34 +321,15 @@ void handle_server_post_switch()
       }
       content += "]}";
       DPRINTLN("[DEBUG] Server send: " + content);
-      server.send(200, JSON, content);
+      server.send(200, TYPE_JSON, content);
       return;
     }
   }
-  // error
-  server.send(422, JSON, ERROR_422);
-}
-
-bool handle_server_file(String path)
-{
-  DPRINTLN("[DEBUG] Server receive get file: " + path);
-  if (path.endsWith("/")) path += "index.htm";
-  String contentType = server_get_content_type(path);
-  String pathWithGz = path + ".gz";
-  if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) {
-    if (SPIFFS.exists(pathWithGz))
-      path += ".gz";
-    File file = SPIFFS.open(path, "r");
-    size_t sent = server.streamFile(file, contentType);
-    file.close();
-    return true;
-  }
-  return false;
+  server.send(422, TYPE_JSON, ERROR_422);
 }
 
 void switch_reset()
 {
-  bool ret;
   DPRINTLN("[DEBUG] Switch RESET: ");
   led_ticker.attach(0.2, led_flip);
   WiFi.begin("");
@@ -564,39 +543,21 @@ void server_turn(int i, String state, String content)
   switch_turn(i, b);
   content += state + "}";
   DPRINTLN("[DEBUG] Server send: " + content);
-  server.send(200, JSON, content);
+  server.send(200, TYPE_JSON, content);
 }
 
 String server_form(String i, bool state, String name)
 {
-  String content = String("<form action='/switch' method='post'>");
+  String content = String("<form action='/switch' method='post' target='backend'>\r\n");
   if (i != "") {
-    content += "<input type='hidden' name='switch' value='" + i + "'>";
+    content += "<input type='hidden' name='switch' value='" + i + "'>\r\n";
   }
   if (state != -1) {
     content += "<input type='hidden' name='state' value='";
     content += state ? "1" : "0";
-    content += "'>";
+    content += "'>\r\n";
   }
-  content += "<input type='submit' value='" + name + "' onclick='return submit(event,this)'></form><br>\r\n";
+  content += "<input type='submit' value='" + name + "' onclick='return turn(this)'>\r\n</form><br>\r\n";
   return content;
-}
-
-String server_get_content_type(String filename)
-{
-  if (server.hasArg("download")) return "application/octet-stream";
-  else if (filename.endsWith(".htm")) return "text/html";
-  else if (filename.endsWith(".html")) return "text/html";
-  else if (filename.endsWith(".css")) return "text/css";
-  else if (filename.endsWith(".js")) return "application/javascript";
-  else if (filename.endsWith(".png")) return "image/png";
-  else if (filename.endsWith(".gif")) return "image/gif";
-  else if (filename.endsWith(".jpg")) return "image/jpeg";
-  else if (filename.endsWith(".ico")) return "image/x-icon";
-  else if (filename.endsWith(".xml")) return "text/xml";
-  else if (filename.endsWith(".pdf")) return "application/x-pdf";
-  else if (filename.endsWith(".zip")) return "application/x-zip";
-  else if (filename.endsWith(".gz")) return "application/x-gzip";
-  return "text/plain";
 }
 
