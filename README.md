@@ -25,6 +25,12 @@
 - `#define SWITCH_COUNT 2` 继电器数量
 - `#define SWITCH_TRIG_LOW` 继电器低电平触发，注释掉就是高电平触发
 - `#define SWITCH_DEBUG` 开启 TX0 调试输出，注释掉就是关闭调试输出
+- `#define SWITCH_NAME "SWITCH_"` mDNS 名称前缀，后面会加上 Wifi Mac 地址后三位，用于识别设备
+- `#define SWITCH_SERV "http_switch"` mDNS 服务名，用于局域网发现设备
+
+## 网络接口
+
+参见[网络接口文档](network.md)。
 
 ### 板载按键
 
