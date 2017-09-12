@@ -4,10 +4,11 @@
 #include <Ticker.h>
 #include <IRrecv.h> // @see https://github.com/markszabo/IRremoteESP8266
 
-#define SWITCH_COUNT 2       // 继电器数量
-#define SWITCH_TRIG_LOW      // 继电器低电平触发
-#define SWITCH_DEBUG         // 开启 TX0 调试输出
-#define SWITCH_NAME "switch" // mDNS 名称
+#define SWITCH_COUNT 2              // 继电器数量
+#define SWITCH_TRIG_LOW             // 继电器低电平触发
+#define SWITCH_DEBUG                // 开启 TX0 调试输出
+#define SWITCH_NAME "SWITCH_"       // mDNS 名称前缀
+#define SWITCH_SERV "http_switch"   // mDNS 服务名
 
 #ifdef SWITCH_TRIG_LOW
 #define SWITCH_ON LOW
@@ -70,6 +71,8 @@ r.open(f.method,f.action);r.send(d);return false}</script>\r\n</body>\r\n</html>
 
 static ESP8266WebServer server(80);
 
+static String mdns_name;
+
 void setup()
 {
   setup_debug();
@@ -77,6 +80,7 @@ void setup()
   setup_led();
   setup_reset();
   setup_irrecv();
+  setup_mdns();
   setup_wifi();
   setup_server();
 }
@@ -117,12 +121,20 @@ void setup_irrecv()
   delay(10);
 }
 
+void setup_mdns()
+{
+  String mac = WiFi.macAddress();
+  mdns_name = String(SWITCH_NAME) + mac.substring(9, 11) + mac.substring(12, 14) + mac.substring(15, 17);
+  mdns_name.toUpperCase();
+}
+
 ///
 // Wifi 配置
 //
 void setup_wifi()
 {
   WiFi.mode(WIFI_STA);
+  WiFi.hostname(mdns_name);
   if (WiFi.SSID() == "") {
     wifi_config(); // 没有配置，开始配置
   } else {
@@ -522,7 +534,7 @@ void wifi_connected()
   wifi_state = WIFI_CONNECTED;
   led_connected();
   server_start();
-  mdns_setup();
+  mdns_start();
 }
 
 void server_start()
@@ -564,14 +576,14 @@ String server_form(String i, bool state, String name)
   return content;
 }
 
-void mdns_setup()
+void mdns_start()
 {
-  if (!MDNS.begin(SWITCH_NAME)) {
+  if (!MDNS.begin(mdns_name.c_str())) {
     DPRINTLN("[DEBUG] mDNS error");
     return;
   }
   MDNS.addService("http", "tcp", 80);
-  DPRINT("[DEBUG] mDNS success: ");
-  DPRINTLN(SWITCH_NAME);
+  MDNS.addService(SWITCH_SERV, "tcp", 80);
+  DPRINTLN("[DEBUG] mDNS success: " + mdns_name);
 }
 
