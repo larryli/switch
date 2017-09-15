@@ -52,6 +52,7 @@ bool irrecv_loop()
             DPRINTLN(i + 1);
             led_switch();
             switch_toggle(i);
+            break;
           }
         }
         break;
