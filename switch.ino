@@ -32,7 +32,7 @@ void switch_setup()
 
 void switch_reset()
 {
-  DPRINTLN("[DEBUG] Switch RESET: ");
+  debug_println(F("[DEBUG] Switch RESET: "));
   led_reset();
   WiFi.begin("");
   WiFi.disconnect();
@@ -45,9 +45,9 @@ bool switch_toggle(unsigned int i)
   if (i < SWITCH_COUNT) {
     int data = !digitalRead(SWITCHES[i]);
     bool state = (data == SWITCH_ON);
-    DPRINT("[DEBUG] Switch #");
-    DPRINT(i + 1);
-    DPRINTLN(state ? " on" : " off");
+    debug_print(F("[DEBUG] Switch #"));
+    debug_print(i + 1);
+    debug_println(state ? F(" on") : F(" off"));
     digitalWrite(SWITCHES[i], data);
     return state ? true : false;
   }
@@ -60,16 +60,16 @@ bool switch_turn(unsigned int i, bool state)
     int data = digitalRead(SWITCHES[i]);
     if (state) {
       if (data == SWITCH_OFF) {
-        DPRINT("[DEBUG] Switch #");
-        DPRINT(i + 1);
-        DPRINTLN(" on");
+        debug_print(F("[DEBUG] Switch #"));
+        debug_print(i + 1);
+        debug_println(F(" on"));
         digitalWrite(SWITCHES[i], SWITCH_ON);
         return true;
       }
     } else if (data == SWITCH_ON) {
-      DPRINT("[DEBUG] Switch #");
-      DPRINT(i + 1);
-      DPRINTLN(" off");
+      debug_print(F("[DEBUG] Switch #"));
+      debug_print(i + 1);
+      debug_println(F(" off"));
       digitalWrite(SWITCHES[i], SWITCH_OFF);
       return true;
     }

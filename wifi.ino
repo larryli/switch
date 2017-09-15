@@ -69,7 +69,8 @@ bool wifi_is_connected()
 //
 static void wifi_connect()
 {
-  DPRINTLN("[DEBUG] Wifi connects: " + WiFi.SSID());
+  debug_print(F("[DEBUG] Wifi connects: "));
+  debug_println(WiFi.SSID());
   wifi_state = WIFI_CONNECTING;
   WiFi.begin();
   led_connect();
@@ -80,7 +81,7 @@ static void wifi_connect()
 //
 static void wifi_config()
 {
-  DPRINTLN("[DEBUG] Wifi config");
+  debug_println(F("[DEBUG] Wifi config"));
   wifi_state = WIFI_CONFIG;
   WiFi.beginSmartConfig();
   led_config();
@@ -91,7 +92,7 @@ static void wifi_config()
 //
 static void wifi_received()
 {
-  DPRINTLN("[DEBUG] Wifi config received");
+  debug_println(F("[DEBUG] Wifi config received"));
   wifi_connect(); // 连网
 }
 
@@ -100,7 +101,7 @@ static void wifi_received()
 //
 static void wifi_failed()
 {
-  DPRINTLN("[DEBUG] Wifi connect failed");
+  debug_println(F("[DEBUG] Wifi connect failed"));
   wifi_config();  // 配网
 }
 
@@ -109,7 +110,7 @@ static void wifi_failed()
 //
 static void wifi_disconnected()
 {
-  DPRINTLN("[DEBUG] Wifi disconnected");
+  debug_println(F("[DEBUG] Wifi disconnected"));
   wifi_state = WIFI_DISCONNECTED;
   led_disconnected();
 }
@@ -119,8 +120,8 @@ static void wifi_disconnected()
 //
 static void wifi_connected()
 {
-  DPRINT("[DEBUG] Wifi connected, IP address: ");
-  DPRINTLN(WiFi.localIP());
+  debug_print(F("[DEBUG] Wifi connected, IP address: "));
+  debug_println(WiFi.localIP());
   wifi_state = WIFI_CONNECTED;
   led_connected();
   server_start();

@@ -25,12 +25,12 @@ static const uint8_t RESET_BTN = D3;
 #ifdef SWITCH_DEBUG
 #define debug_setup()  Serial.begin(115200);  \
   Serial.println()
-#define DPRINT(...)    Serial.print(__VA_ARGS__)
-#define DPRINTLN(...)  Serial.println(__VA_ARGS__)
+#define debug_print(...)    Serial.print(__VA_ARGS__)
+#define debug_println(...)  Serial.println(__VA_ARGS__)
 #else
 #define debug_setup()
-#define DPRINT(...)
-#define DPRINTLN(...)
+#define debug_printRINT(...)
+#define debug_println(...)
 #endif
 
 // Switch

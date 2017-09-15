@@ -8,7 +8,7 @@ void reset_setup()
 
 static void reset_handle()
 {
-  DPRINTLN("[DEBUG] Push reset button");
+  debug_println(F("[DEBUG] Push reset button"));
   switch_reset();
 }
 

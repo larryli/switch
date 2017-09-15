@@ -13,12 +13,13 @@ void mdns_setup()
 bool mdns_start()
 {
   if (!MDNS.begin(mdns_name.c_str())) {
-    DPRINTLN("[DEBUG] mDNS error");
+    debug_println(F("[DEBUG] mDNS error"));
     return false;
   }
-  MDNS.addService("http", "tcp", 80);
-  MDNS.addService(SWITCH_SERV, "tcp", 80);
-  DPRINTLN("[DEBUG] mDNS success: " + mdns_name);
+  MDNS.addService(F("http"), F("tcp"), 80);
+  MDNS.addService(SWITCH_SERV, F("tcp"), 80);
+  debug_print(F("[DEBUG] mDNS success: "));
+  debug_println(mdns_name);
   return true;
 }
 

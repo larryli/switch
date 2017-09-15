@@ -22,34 +22,32 @@ bool irrecv_loop()
 {
   if (irrecv.decode(&ir_results)) {
     unsigned int ircode = ir_results.value;
-    DPRINT("[DEBUG] IR get code: 0x");
-#ifdef SWITCH_DEBUG
-    Serial.println(ircode, HEX);
-#endif
+    debug_print(F("[DEBUG] IR get code: 0x"));
+    debug_println(ircode, HEX);
     switch (ircode) {
       case OFF_IRCODE:
-        DPRINTLN("[DEBUG] IR off");
+        debug_println(F("[DEBUG] IR off"));
         led_switch();
         for (int i = 0; i < SWITCH_COUNT; i++) {
           switch_turn(i, false);
         }
         break;
       case ON_IRCODE:
-        DPRINTLN("[DEBUG] IR on");
+        debug_println(F("[DEBUG] IR on"));
         led_switch();
         for (int i = 0; i < SWITCH_COUNT; i++) {
           switch_turn(i, true);
         }
         break;
       case RESET_IRCODE:
-        DPRINTLN("[DEBUG] IR reset");
+        debug_println(F("[DEBUG] IR reset"));
         switch_reset();
         break;
       default:
         for (int i = 0; i < SWITCH_COUNT; i++) {
           if (ircode == SWITCH_IRCODES[i]) {
-            DPRINT("[DEBUG] IR switch #");
-            DPRINTLN(i + 1);
+            debug_print(F("[DEBUG] IR switch #"));
+            debug_println(i + 1);
             led_switch();
             switch_toggle(i);
             break;

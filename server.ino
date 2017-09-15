@@ -1,20 +1,21 @@
 #include "switch.h"
 #include <ESP8266WebServer.h>
 
-static const char *TYPE_JSON = "application/json";
-static const char *TYPE_HTML = "text/html";
-static const char *TYPE_CSS = "text/css";
-static const char *TYPE_JS = "application/javascript";
-static const char *HEADER_CACHE = "Cache-Control";
-static const char *CACHE_NONE = "no-cache";
-static const char *CACHE_DAY = "max-age=86400";
-static const char *ERROR_404 = "{\"success\":0,\"message\":\"Not Found\"}";
-static const char *ERROR_422 = "{\"success\":0,\"message\":\"Unprocessable Entity\"}";
-static const char *HTML_HEAD = "<!DOCTYPE HTML>\n<html>\n<head>\n<meta charset='utf-8'>\n\
+// @see http://espressif.com/sites/default/files/documentation/save_esp8266ex_ram_with_progmem_cn.pdf
+static const char TYPE_JSON[] PROGMEM = "application/json";
+static const char TYPE_HTML[] PROGMEM = "text/html";
+static const char TYPE_CSS[] PROGMEM = "text/css";
+static const char TYPE_JS[] PROGMEM = "application/javascript";
+static const char HEADER_CACHE[] PROGMEM = "Cache-Control";
+static const char CACHE_NONE[] PROGMEM = "no-cache";
+static const char CACHE_DAY[] PROGMEM = "max-age=86400";
+static const char ERROR_404[] PROGMEM = "{\"success\":0,\"message\":\"Not Found\"}";
+static const char ERROR_422[] PROGMEM = "{\"success\":0,\"message\":\"Unprocessable Entity\"}";
+static const char HTML_HEAD[] PROGMEM = "<!DOCTYPE HTML>\n<html>\n<head>\n<meta charset='utf-8'>\n\
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n<title>智能开关</title>\n\
 <link href='/style.css' rel='stylesheet'>\n</head>\n<body>\n<h1>智能开关</h1>\n";
-static const char *HTML_FOOT = "<script src='/turn.js'></script>\n</body>\n</html>";
-static const char *STYLE_CSS = "*{margin:0;padding:0}body{background-color:#f8f8f8}h1{text-align:center;margin:1em}\
+static const char HTML_FOOT[] PROGMEM = "<script src='/turn.js'></script>\n</body>\n</html>";
+static const char STYLE_CSS[] PROGMEM = "*{margin:0;padding:0}body{background-color:#f8f8f8}h1{text-align:center;margin:1em}\
 h2{margin:.77em 0 .3em 0;padding:0 15px;color:#999;font-size:14px}\
 dl{margin:0;background-color:#FFF;line-height:1.47;font-size:17px;overflow:hidden;position:relative}\
 dl:before{content:'';position:absolute;left:0;top:0;right:0;height:1px;border-top:1px solid #e5e5e5;\
@@ -34,7 +35,7 @@ box-sizing:border-box;font-size:18px;text-align:center;text-decoration:none;colo
 form>input.off{background-color:#E64340}form>input:after{content:'';width:200%;height:200%;position:absolute;top:0;\
 left:0;border:1px solid rgba(0,0,0,0.2);transform:scale(0.5);transform-origin:0 0;box-sizing:border-box;border-radius:10px}\
 form>input{margin-top:15px}.hidden{display:none}";
-static const char *TURN_JS = "function turn(t){var f=t.parentNode,d=new FormData();\
+static const char TURN_JS[] PROGMEM = "function turn(t){var f=t.parentNode,d=new FormData();\
 for(var i=0;i<f.children.length;i++){var v=f.children[i];if(v.name!=undefined&&v.name!='')d.append(v.name,v.value)}\
 var r=new XMLHttpRequest();r.onreadystatechange=function(){if(r.readyState==4&&r.status==200){\
 var o=JSON.parse(r.responseText);if(o.success!=undefined&&o.success==1){\
@@ -65,88 +66,96 @@ void server_loop()
 void server_start()
 {
   server.begin();
-  DPRINT("[DEBUG] Server start: http://");
-  DPRINT(WiFi.localIP());
-  DPRINTLN("/");
+  debug_print(F("[DEBUG] Server start: http://"));
+  debug_print(WiFi.localIP());
+  debug_println(F("/"));
 }
 
 void server_stop()
 {
   server.stop();
-  DPRINTLN("[DEBUG] Server stop");
+  debug_println(F("[DEBUG] Server stop"));
 }
 
 static void server_root()
 {
   bool can_on, can_off;
-  String content = String(HTML_HEAD);
+  String content = String(FPSTR(HTML_HEAD));
 
-  DPRINTLN("[DEBUG] Server receive get home page");
-  server.sendHeader(HEADER_CACHE, CACHE_NONE);
+  debug_println(F("[DEBUG] Server receive get home page"));
+  server.sendHeader(FPSTR(HEADER_CACHE), FPSTR(CACHE_NONE));
   can_on = can_off = false;
-  content += "<h2>开关列表</h2>\n<dl>\n";
+  content += F("<h2>开关列表</h2>\n<dl>\n");
   for (int i = 0; i < SWITCH_COUNT; i++) {
     bool state = (digitalRead(SWITCHES[i]) == SWITCH_ON);
     String name = String(i + 1);
-    content += "<div>\n<dt>开关 #" + name + "</dt>\n<dd>";
-    content += server_form1(name, !state, state ? "关闭" : "打开");
-    content += "</dd>\n</div>\n";
+    content += F("<div>\n<dt>开关 #");
+    content += name;
+    content += F("</dt>\n<dd>");
+    content += server_form1(name, !state, state ? F("关闭") : F("打开"));
+    content += F("</dd>\n</div>\n");
     can_on = can_on || !state;
     can_off = can_off || state;
   }
 
-  content += "</dl>\n<h2>批量开关</h2>\n";
-  content += server_form2(can_on, true, "全部打开");
-  content += server_form2(can_off, false, "全部关闭");
-  content += HTML_FOOT;
-  server.send(200, TYPE_HTML, content);
+  content += F("</dl>\n<h2>批量开关</h2>\n");
+  content += server_form2(can_on, true, F("全部打开"));
+  content += server_form2(can_off, false, F("全部关闭"));
+  content += FPSTR(HTML_FOOT);
+  server.send(200, FPSTR(TYPE_HTML), content);
 }
 
 static void server_style_css()
 {
-  DPRINTLN("[DEBUG] Server receive get style.css");
-  server.sendHeader(HEADER_CACHE, CACHE_DAY);
-  server.send(200, TYPE_CSS, STYLE_CSS);
+  debug_println(F("[DEBUG] Server receive get style.css"));
+  server.sendHeader(FPSTR(HEADER_CACHE), FPSTR(CACHE_DAY));
+  server.send(200, FPSTR(TYPE_CSS), FPSTR(STYLE_CSS));
 }
 
 static void server_turn_js()
 {
-  DPRINTLN("[DEBUG] Server receive get turn.js");
-  server.sendHeader(HEADER_CACHE, CACHE_DAY);
-  server.send(200, TYPE_JS, TURN_JS);
+  debug_println(F("[DEBUG] Server receive get turn.js"));
+  server.sendHeader(FPSTR(HEADER_CACHE), FPSTR(CACHE_DAY));
+  server.send(200, FPSTR(TYPE_JS), FPSTR(TURN_JS));
 }
 
 static void server_get_switch()
 {
-  String content = String("{\"success\":1,");
+  String content = String(F("{\"success\":1,"));
 
-  server.sendHeader(HEADER_CACHE, CACHE_NONE);
+  server.sendHeader(FPSTR(HEADER_CACHE), FPSTR(CACHE_NONE));
   if (server.hasArg("switch")) {
     String name = server.arg("switch");
     int i = name.toInt() - 1;
     if (i < 0 || i >= SWITCH_COUNT) {
-      server.send(404, TYPE_JSON, ERROR_404);
+      server.send(404, FPSTR(TYPE_JSON), FPSTR(ERROR_404));
       return;
     }
-    DPRINTLN("[DEBUG] Server receive get switch #" + name);
-    content += "\"switch\":" + name + ",\"state\":";
-    content += (digitalRead(SWITCHES[i]) == SWITCH_ON) ? "1" : "0";
-    content += "}";
-    DPRINTLN("[DEBUG] Server send: " + content);
-    server.send(200, TYPE_JSON, content);
+    debug_print(F("[DEBUG] Server receive get switch #"));
+    debug_println(name);
+    content += F("\"switch\":");
+    content += name;
+    content += F(",\"state\":");
+    content += (digitalRead(SWITCHES[i]) == SWITCH_ON) ? F("1") : F("0");
+    content += F("}");
+    debug_print(F("[DEBUG] Server send: "));
+    debug_println(content);
+    server.send(200, FPSTR(TYPE_JSON), content);
     return;
   }
-  DPRINTLN("[DEBUG] Server receive get switches");
-  content += server_get_switches() + "}";
-  DPRINTLN("[DEBUG] Server send: " + content);
-  server.send(200, TYPE_JSON, content);
+  debug_println(F("[DEBUG] Server receive get switches"));
+  content += server_get_switches();
+  content += F("}");
+  debug_print(F("[DEBUG] Server send: "));
+  debug_println(content);
+  server.send(200, FPSTR(TYPE_JSON), content);
 }
 
 static void server_post_switch()
 {
-  String content = String("{\"success\":1,");
+  String content = String(F("{\"success\":1,"));
 
-  server.sendHeader(HEADER_CACHE, CACHE_NONE);
+  server.sendHeader(FPSTR(HEADER_CACHE), FPSTR(CACHE_NONE));
   if (server.hasArg("state")) {
     String state = server.arg("state");
     if (state == "1" || state == "0") {
@@ -155,39 +164,52 @@ static void server_post_switch()
         String name = server.arg("switch");
         int i = name.toInt() - 1;
         if (i < 0 || i >= SWITCH_COUNT) {
-          server.send(404, TYPE_JSON, ERROR_404);
+          server.send(404, FPSTR(TYPE_JSON), FPSTR(ERROR_404));
           return;
         }
-        content += "\"switch\":" + name + ",\"state\":";
-        DPRINTLN("[DEBUG] Server receive post switch #" + name + " to " + state);
+        content += F("\"switch\":");
+        content += name;
+        content += F(",\"state\":");
+        debug_print(F("[DEBUG] Server receive post switch #"));
+        debug_print(name);
+        debug_print(F(" to "));
+        debug_println(state);
         led_switch();
         switch_turn(i, b);
         content += state;
         if (server.hasArg("switches")) {
-          content += "," + server_get_switches();
+          content += F(",");
+          content += server_get_switches();
         }
-        content += "}";
-        DPRINTLN("[DEBUG] Server send: " + content);
-        server.send(200, TYPE_JSON, content);
+        content += F("}");
+        debug_print(F("[DEBUG] Server send: "));
+        debug_println(content);
+        server.send(200, FPSTR(TYPE_JSON), content);
         return;
       }
-      content += "\"switches\":[";
-      DPRINTLN("[DEBUG] Server receive post switches to " + state);
+      content += F("\"switches\":[");
+      debug_print(F("[DEBUG] Server receive post switches to "));
+      debug_println(state);
       led_switch();
       for (int i = 0; i < SWITCH_COUNT; i++) {
         switch_turn(i, b);
-        content += "{\"switch\":" + String(i + 1) + ",\"state\":" + state + "}";
+        content += F("{\"switch\":");
+        content += String(i + 1);
+        content += F(",\"state\":");
+        content += state;
+        content += F("}");
         if (i < SWITCH_COUNT - 1) {
-          content += ",";
+          content += F(",");
         }
       }
-      content += "]}";
-      DPRINTLN("[DEBUG] Server send: " + content);
-      server.send(200, TYPE_JSON, content);
+      content += F("]}");
+      debug_print(F("[DEBUG] Server send: "));
+      debug_println(content);
+      server.send(200, FPSTR(TYPE_JSON), content);
       return;
     }
   }
-  server.send(422, TYPE_JSON, ERROR_422);
+  server.send(422, FPSTR(TYPE_JSON), FPSTR(ERROR_422));
 }
 
 static void server_turn(int i, String state, String content)
@@ -195,58 +217,65 @@ static void server_turn(int i, String state, String content)
   bool b = (state == "1");
   led_switch();
   switch_turn(i, b);
-  content += state + "}";
-  DPRINTLN("[DEBUG] Server send: " + content);
-  server.send(200, TYPE_JSON, content);
+  content += F("}");
+  debug_println(F("[DEBUG] Server send: "));
+  debug_println(content);
+  server.send(200, FPSTR(TYPE_JSON), content);
 }
 
 static String server_get_switches()
 {
-  String content = String("\"switches\":[");
+  String content = String(F("\"switches\":["));
   for (int i = 0; i < SWITCH_COUNT; i++) {
-    content += "{\"switch\":" + String(i + 1) + ",\"state\":";
-    content += (digitalRead(SWITCHES[i]) == SWITCH_ON) ? "1" : "0";
-    content += "}";
+    content += F("{\"switch\":");
+    content += String(i + 1);
+    content += F(",\"state\":");
+    content += (digitalRead(SWITCHES[i]) == SWITCH_ON) ? F("1") : F("0");
+    content += F("}");
     if (i < SWITCH_COUNT - 1) {
-      content += ",";
+      content += F(",");
     }
   }
-  content += "]";
+  content += F("]");
   return content;
 }
 
 static String server_form1(String i, bool state, String name)
 {
-  String content = String("<form action='/switch' method='post' id='switch-");
-  content += i + "'>\n<input type='hidden' name='switches' value='1'>\n";
-  content += "<input type='hidden' name='switch' value='" + i + "'>\n";
-  content += "<input type='hidden' name='state' value='";
-  content += state ? "1" : "0";
-  content += "'>\n";
-  content += "<label><input type='submit' value='" + name + "' onclick='return turn2(this)'><span";
+  String content = String(F("<form action='/switch' method='post' id='switch-"));
+  content += i;
+  content += F("'>\n<input type='hidden' name='switches' value='1'>\n<input type='hidden' name='switch' value='");
+  content += i;
+  content += F("'>\n<input type='hidden' name='state' value='");
+  content += state ? F("1") : F("0");
+  content += F("'>\n");
+  content += F("<label><input type='submit' value='");
+  content += name;
+  content += F("' onclick='return turn2(this)'><span");
   if (!state) {
-    content += " class='on'";
+    content += F(" class='on'");
   }
-  content += "></span></label>\n</form>\n";
+  content += F("></span></label>\n</form>\n");
   return content;
 }
 
 static String server_form2(bool show, bool state, String name)
 {
-  String content = String("<form action='/switch' method='post' id='switch-");
-  content += state ? "on" : "off";
-  content += "'";
+  String content = String(F("<form action='/switch' method='post' id='switch-"));
+  content += state ? F("on") : F("off");
+  content += F("'");
   if (!show) {
-    content += " class='hidden'";
+    content += F(" class='hidden'");
   }
-  content += ">\n<input type='hidden' name='state' value='";
-  content += state ? "1" : "0";
-  content += "'>\n";
-  content += "<input type='submit' value='" + name + "'";
+  content += F(">\n<input type='hidden' name='state' value='");
+  content += state ? F("1") : F("0");
+  content += F("'>\n<input type='submit' value='");
+  content += name;
+  content += F("'");
   if (!state) {
-    content += " class='off'";
+    content += F(" class='off'");
   }
-  content += " onclick='return turn(this)'>\n</form>\n";
+  content += F(" onclick='return turn(this)'>\n</form>\n");
   return content;
 }
 
