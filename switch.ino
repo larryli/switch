@@ -76,4 +76,3 @@ bool switch_turn(unsigned int i, bool state)
   }
   return false;
 }
-
