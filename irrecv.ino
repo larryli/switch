@@ -1,23 +1,45 @@
+///
+// 红外
+//
+
 #include "switch.h"
 #include <IRrecv.h> // @see https://github.com/markszabo/IRremoteESP8266
 
+///
+// 红外 1~8 按键码
+//
 static const unsigned int SWITCH_IRCODES[] = {
   0xFF30CF, 0xFF18E7, 0xFF7A85, 0xFF10EF,
   0xFF38C7, 0xFF5AA5, 0xFF42BD, 0xFF4AB5
 };
+///
+// 红外 0 按键码
+//
 static const unsigned int OFF_IRCODE = 0xFF6897;
+///
+// 红外 100+ 按键码
+//
 static const unsigned int ON_IRCODE = 0xFF9867;
+///
+// 红外 EQ 按键码
+//
 static const unsigned int RESET_IRCODE = 0xFF906F;
 
 static IRrecv irrecv(IR_RECV);
 static decode_results ir_results;
 
+///
+// 红外配置
+//
 void irrecv_setup()
 {
   irrecv.enableIRIn();
   delay(10);
 }
 
+///
+// 红外处理
+//
 bool irrecv_loop()
 {
   if (irrecv.decode(&ir_results)) {
@@ -41,7 +63,7 @@ bool irrecv_loop()
         break;
       case RESET_IRCODE:
         debug_println(F("[DEBUG] IR reset"));
-        switch_reset();
+        reset_handle();
         break;
       default:
         for (int i = 0; i < SWITCH_COUNT; i++) {
@@ -61,4 +83,3 @@ bool irrecv_loop()
   }
   return false;
 }
-

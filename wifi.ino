@@ -1,3 +1,7 @@
+///
+// Wifi
+//
+
 #include "switch.h"
 
 static const uint8_t WIFI_CONNECTING = 0;
@@ -127,4 +131,3 @@ static void wifi_connected()
   server_start();
   mdns_start();
 }
-

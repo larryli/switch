@@ -1,7 +1,14 @@
+///
+// HTTP 服务
+//
+
 #include "switch.h"
 #include <ESP8266WebServer.h>
 
+///
+// 使用 Flash 保存字符串，节省 RAM 空间
 // @see http://espressif.com/sites/default/files/documentation/save_esp8266ex_ram_with_progmem_cn.pdf
+//
 static const char TYPE_JSON[] PROGMEM = "application/json";
 static const char TYPE_HTML[] PROGMEM = "text/html";
 static const char TYPE_CSS[] PROGMEM = "text/css";
@@ -49,6 +56,9 @@ function turn2(t){return turn(t.parentNode)}";
 
 static ESP8266WebServer server(80);
 
+///
+// HTTP 服务配置
+//
 void server_setup()
 {
   server.on("/", server_root);
@@ -58,11 +68,17 @@ void server_setup()
   server.on("/switch", HTTP_POST, server_post_switch);
 }
 
+///
+// 处理 HTTP 请求
+//
 void server_loop()
 {
   server.handleClient();
 }
 
+///
+// 启动 HTTP 服务，不直接在配置中启动，是因为网络不确定
+//
 void server_start()
 {
   server.begin();
@@ -71,6 +87,9 @@ void server_start()
   debug_println(F("/"));
 }
 
+///
+// 停止 HTTP 服务
+//
 void server_stop()
 {
   server.stop();
@@ -278,4 +297,3 @@ static String server_form2(bool show, bool state, String name)
   content += F(" onclick='return turn(this)'>\n</form>\n");
   return content;
 }
-

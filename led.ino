@@ -1,9 +1,16 @@
+///
+// LED
+//
+
 #include "switch.h"
 #include <Ticker.h>
 
 static int led_tick;
 static Ticker led_ticker;
 
+///
+// LED 配置
+//
 void led_setup()
 {
   pinMode(WIFI_LED, OUTPUT);
@@ -11,7 +18,7 @@ void led_setup()
 }
 
 ///
-// 正在联网，闪两下，亮 0.5s
+// LED 正在联网，闪两下，亮 0.5s
 //
 void led_connect()
 {
@@ -21,7 +28,7 @@ void led_connect()
 }
 
 ///
-// 联网正常，常亮
+// LED 联网正常，常亮
 //
 void led_connected()
 {
@@ -30,7 +37,7 @@ void led_connected()
 }
 
 ///
-// 联网错误，慢闪，亮 0.5 秒，灭 1.5 秒
+// LED 联网错误，慢闪，亮 0.5 秒，灭 1.5 秒
 //
 void led_disconnected()
 {
@@ -40,7 +47,7 @@ void led_disconnected()
 }
 
 ///
-// 配网状态，快闪
+// LED 配网状态，快闪
 //
 void led_config()
 {
@@ -49,7 +56,7 @@ void led_config()
 }
 
 ///
-// 清除配置重启，超快闪
+// LED 清除配置重启，超快闪
 //
 void led_reset()
 {
@@ -57,7 +64,7 @@ void led_reset()
 }
 
 ///
-// 开关动作，只闪一次，只在网络正常时使用
+// LED 开关动作，只闪一次，只在网络正常时使用
 //
 void led_switch()
 {
@@ -100,6 +107,6 @@ static void led_flip_switch()
 static void led_flip()
 {
   int state = digitalRead(WIFI_LED);
+
   digitalWrite(WIFI_LED, !state);
 }
-
