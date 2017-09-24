@@ -17,6 +17,8 @@ void setup()
   mdns_setup();
   wifi_setup();
   server_setup();
+
+  oled_setup();
 }
 
 ///
@@ -24,6 +26,7 @@ void setup()
 //
 void loop()
 {
+  oled_loop();
   if (irrecv_loop()) {
     return;
   } else if (wifi_loop()) {

@@ -47,6 +47,18 @@ bool irrecv_loop()
     debug_print(F("[DEBUG] IR get code: 0x"));
     debug_println(ircode, HEX);
     switch (ircode) {
+      case 0xFF22DD:
+        debug_println(F("[DEBUG] IR up"));
+        oled_up();
+        break;
+      case 0xFF02FD:
+        debug_println(F("[DEBUG] IR down"));
+        oled_down();
+        break;
+      case 0xFFC23D:
+        debug_println(F("[DEBUG] IR select"));
+        oled_select();
+        break;
       case OFF_IRCODE:
         debug_println(F("[DEBUG] IR off"));
         led_switch();

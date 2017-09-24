@@ -70,4 +70,12 @@ void server_stop();
 void mdns_setup();
 bool mdns_start();
 
+// Oled
+void oled_setup();
+void oled_loop();
+void oled_up();
+void oled_down();
+void oled_select();
+
+
 #endif
