@@ -18,6 +18,7 @@ void reset_handle()
   led_reset();
   WiFi.begin("");
   WiFi.disconnect();
-  delay(5000);
-  ESP.reset();
+  ESP.eraseConfig();
+  delay(100);
+  ESP.restart();
 }

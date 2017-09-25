@@ -1,9 +1,12 @@
 ///
 // HTTP 服务
 //
+// 升级固件
+// curl -F "image=@switch.bin" http://SWITCH_XXYYzZ.local/update
 
 #include "switch.h"
 #include <ESP8266WebServer.h>
+#include <ESP8266HTTPUpdateServer.h>
 
 ///
 // 使用 Flash 保存字符串，节省 RAM 空间
@@ -55,6 +58,11 @@ r.open(f.method,f.action);r.send(d);return false}\
 function turn2(t){return turn(t.parentNode)}";
 
 static ESP8266WebServer server(80);
+#ifdef SWITCH_DEBUG
+static ESP8266HTTPUpdateServer update(true);
+#else
+static ESP8266HTTPUpdateServer update;
+#endif
 
 ///
 // HTTP 服务配置
@@ -66,6 +74,7 @@ void server_setup()
   server.on("/turn.js", server_turn_js);
   server.on("/switch", HTTP_GET, server_get_switch);
   server.on("/switch", HTTP_POST, server_post_switch);
+  update.setup(&server);
 }
 
 ///
