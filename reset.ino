@@ -22,6 +22,6 @@ void reset_handle()
 #ifdef SWITCH_OLED
   oled_clear();
 #endif
-  delay(5000);
+  delay(1000);
   ESP.restart();
 }

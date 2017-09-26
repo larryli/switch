@@ -62,8 +62,16 @@ static ESP8266WebServer server(80);
 void server_setup()
 {
   server.on("/", server_root);
-  server.on("/style.css", server_style_css);
-  server.on("/turn.js", server_turn_js);
+  server.on("/style.css", [](){
+    debug_println(F("[DEBUG] Server receive get style.css"));
+    server.sendHeader(FPSTR(HEADER_CACHE), FPSTR(CACHE_DAY));
+    server.send(200, FPSTR(TYPE_CSS), FPSTR(STYLE_CSS));
+  });
+  server.on("/turn.js", [](){
+    debug_println(F("[DEBUG] Server receive get turn.js"));
+    server.sendHeader(FPSTR(HEADER_CACHE), FPSTR(CACHE_DAY));
+    server.send(200, FPSTR(TYPE_JS), FPSTR(TURN_JS));
+  });
   server.on("/switch", HTTP_GET, server_get_switch);
   server.on("/switch", HTTP_POST, server_post_switch);
 }
@@ -122,20 +130,6 @@ static void server_root()
   content += server_form2(can_off, false, F("全部关闭"));
   content += FPSTR(HTML_FOOT);
   server.send(200, FPSTR(TYPE_HTML), content);
-}
-
-static void server_style_css()
-{
-  debug_println(F("[DEBUG] Server receive get style.css"));
-  server.sendHeader(FPSTR(HEADER_CACHE), FPSTR(CACHE_DAY));
-  server.send(200, FPSTR(TYPE_CSS), FPSTR(STYLE_CSS));
-}
-
-static void server_turn_js()
-{
-  debug_println(F("[DEBUG] Server receive get turn.js"));
-  server.sendHeader(FPSTR(HEADER_CACHE), FPSTR(CACHE_DAY));
-  server.send(200, FPSTR(TYPE_JS), FPSTR(TURN_JS));
 }
 
 static void server_get_switch()

@@ -82,6 +82,11 @@ static const uint8_t SWITCHES[] = {D1, D2, D5, D6, D7, D0, D8, D9, D10};
 # define SWITCH_OFF LOW
 #endif
 
+#define WIFI_CONNECTING 0
+#define WIFI_DISCONNECTED 1
+#define WIFI_CONFIG 2
+#define WIFI_CONNECTED 3
+
 static const uint8_t WIFI_LED = D4;
 static const uint8_t RESET_BTN = D3;
 
@@ -131,11 +136,6 @@ void oled_clear();
 #else
 # define oled_refresh()
 #endif
-
-#define WIFI_CONNECTING 0
-#define WIFI_CONNECTED 1
-#define WIFI_DISCONNECTED 2
-#define WIFI_CONFIG 3
 
 // Wifi
 void wifi_setup();
