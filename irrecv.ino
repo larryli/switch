@@ -3,6 +3,8 @@
 //
 
 #include "switch.h"
+
+#ifdef SWITCH_IR 
 #include <IRrecv.h> // @see https://github.com/markszabo/IRremoteESP8266
 
 ///
@@ -47,6 +49,7 @@ bool irrecv_loop()
     debug_print(F("[DEBUG] IR get code: 0x"));
     debug_println(ircode, HEX);
     switch (ircode) {
+#ifdef SWITCH_OLED
       case 0xFF22DD:
         debug_println(F("[DEBUG] IR up"));
         oled_up();
@@ -59,12 +62,14 @@ bool irrecv_loop()
         debug_println(F("[DEBUG] IR select"));
         oled_select();
         break;
+#endif
       case OFF_IRCODE:
         debug_println(F("[DEBUG] IR off"));
         led_switch();
         for (int i = 0; i < SWITCH_COUNT; i++) {
           switch_turn(i, false);
         }
+        oled_refresh();
         break;
       case ON_IRCODE:
         debug_println(F("[DEBUG] IR on"));
@@ -72,6 +77,7 @@ bool irrecv_loop()
         for (int i = 0; i < SWITCH_COUNT; i++) {
           switch_turn(i, true);
         }
+        oled_refresh();
         break;
       case RESET_IRCODE:
         debug_println(F("[DEBUG] IR reset"));
@@ -84,6 +90,7 @@ bool irrecv_loop()
             debug_println(i + 1);
             led_switch();
             switch_toggle(i);
+            oled_refresh();
             break;
           }
         }
@@ -95,3 +102,5 @@ bool irrecv_loop()
   }
   return false;
 }
+
+#endif

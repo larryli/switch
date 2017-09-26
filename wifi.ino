@@ -4,11 +4,6 @@
 
 #include "switch.h"
 
-static const uint8_t WIFI_CONNECTING = 0;
-static const uint8_t WIFI_CONNECTED = 1;
-static const uint8_t WIFI_DISCONNECTED = 2;
-static const uint8_t WIFI_CONFIG = 3;
-
 static uint8_t wifi_state;
 
 ///
@@ -17,6 +12,9 @@ static uint8_t wifi_state;
 void wifi_setup()
 {
   WiFi.mode(WIFI_STA);
+  WiFi.setAutoConnect(true);
+  WiFi.setAutoReconnect(true);
+  WiFi.persistent(false);
   WiFi.hostname(mdns_name);
   if (WiFi.SSID() == "") {
     wifi_config(); // 没有配置，开始配置
@@ -68,6 +66,11 @@ bool wifi_is_connected()
   return wifi_state == WIFI_CONNECTED;
 }
 
+uint8_t wifi_get_state()
+{
+  return wifi_state;
+}
+
 ///
 // 连接已配置的 Wifi
 //
@@ -78,6 +81,7 @@ static void wifi_connect()
   wifi_state = WIFI_CONNECTING;
   WiFi.begin();
   led_connect();
+  oled_refresh();
 }
 
 ///
@@ -87,8 +91,10 @@ static void wifi_config()
 {
   debug_println(F("[DEBUG] Wifi config"));
   wifi_state = WIFI_CONFIG;
+  WiFi.persistent(true);
   WiFi.beginSmartConfig();
   led_config();
+  oled_refresh();
 }
 
 ///
@@ -97,7 +103,9 @@ static void wifi_config()
 static void wifi_received()
 {
   debug_println(F("[DEBUG] Wifi config received"));
+  WiFi.persistent(false);
   wifi_connect(); // 连网
+  oled_refresh();
 }
 
 ///
@@ -107,6 +115,7 @@ static void wifi_failed()
 {
   debug_println(F("[DEBUG] Wifi connect failed"));
   wifi_config();  // 配网
+  oled_refresh();
 }
 
 ///
@@ -117,6 +126,7 @@ static void wifi_disconnected()
   debug_println(F("[DEBUG] Wifi disconnected"));
   wifi_state = WIFI_DISCONNECTED;
   led_disconnected();
+  oled_refresh();
 }
 
 ///
@@ -130,4 +140,8 @@ static void wifi_connected()
   led_connected();
   server_start();
   mdns_start();
+#ifdef SWITCH_OLED
+  oled_qrcode();
+  oled_refresh();
+#endif
 }

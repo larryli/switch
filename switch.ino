@@ -13,12 +13,15 @@ void setup()
   switch_setup();
   led_setup();
   reset_setup();
+#ifdef SWITCH_IR
   irrecv_setup();
+#endif
+#ifdef SWITCH_OLED
+  oled_setup();
+#endif
   mdns_setup();
   wifi_setup();
   server_setup();
-
-  oled_setup();
 }
 
 ///
@@ -26,10 +29,15 @@ void setup()
 //
 void loop()
 {
+#ifdef SWITCH_OLED
   oled_loop();
+#endif
+#ifdef SWITCH_IR
   if (irrecv_loop()) {
     return;
-  } else if (wifi_loop()) {
+  }
+#endif
+  if (wifi_loop()) {
     return;
   }
   server_loop();

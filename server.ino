@@ -195,6 +195,7 @@ static void server_post_switch()
         debug_println(state);
         led_switch();
         switch_turn(i, b);
+        oled_refresh();
         content += state;
         if (server.hasArg("switches")) {
           content += F(",");
@@ -221,6 +222,7 @@ static void server_post_switch()
           content += F(",");
         }
       }
+      oled_refresh();
       content += F("]}");
       debug_print(F("[DEBUG] Server send: "));
       debug_println(content);

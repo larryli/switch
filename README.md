@@ -1,29 +1,44 @@
 # 智能开关
 
-红外与 Wifi 遥控开关，最多支持 8 路开关。建议只采用 4 路以下，避免外接额外处理电路。
+Wifi 遥控开关，最多支持 9 路开关，高低电平触发均可。建议采用 2 路低电平触发继电器，避免外接额外处理电路。
+
+可以支持外红遥控，与 0.96 寸 I2C OLED 显示屏。
 
 ## 硬件
 
-![面包包接线图](switch_bb.png)
+![面包板接线图](switch_bb.png)
 
-物料清单：
+建议物料清单：
 
 - NodeMCU v3 开发板（板载 D4 Led、D3 Flash 与 Reset 按键）
 - 2 通道低电平触发继电器（可选高电平触发，1 路、4 路、双 4 路）
 - HX1838 红外接收头模块（需 CarMP3 21 键遥控器，NEC 编码）
 - 母对母杜邦线 7 条
 
-注意：
+附加物料清单：
 
-- NodeMCU v3 开发板 ESP6288 12F 板载 Led 接在 D4 GPIO2，低电平触发
-- NodeMCU v3 开发板板载 Flash 按键接在 D3 GPIO0，低电平触发
+- 0.96 寸 128x64 SSD1306 I2C OLED 显示屏
+- 母对母杜邦线 4 条
+
+![附加面包板接线图](switch_bb2.png)
+
+说明：
+
+- NodeMCU v3 开发板 ESP6288 12F 板载 Led 接在 D4(GPIO2)，低电平触发
+- NodeMCU v3 开发板板载 Flash 按键接在 D3(GPIO0)，低电平触发
 - NodeMCU v3 开发板板载 Reset 按键接在 RST，低电平触发
-- 双 4 路继电器依次使用 D1、D2、D6、D7、D0、D8、RX、TX。其中后 4 个 GPIO 均有特殊用途：D0 GPIO16 默认会置高电平，D8 GPIO15 同样，RX 即 D9 GPIO3 用于默认的串口接收数据（写固件用），TX 即 D10 GPIO1 用于默认的串口发送数据（需禁用串口调试输出）。除非清楚相关外围电路的设计，请不要使用后面的 4 个引脚。即**只建议使用一个 4 路继电器**。
+- 默认的 2 路继电器，IN1 和 IN2 依次接在 D1(GPIO5) 和 D2(GPIO4)
+- 默认开启的调试串口 RX 在 D9(GPIO3)（未用），TX 在 D10(GPIO1)
+- 可选的红外接收头数据 D0 接在 D5(GPIO14)
+- 可选的 I2C 显示屏 SDA 接在 D6(GPIO12)，SCL 接在 D7(GPIO13)
+- 9 路继电器顺序依次为：D1、D2、D5、D6、D7、D0、D8、D9、D10，其中 D5、D6、D7、D10 被占用将被跳过
 
 ## 软件
 
 - `#define SWITCH_COUNT 2` 继电器数量
 - `#define SWITCH_TRIG_LOW` 继电器低电平触发，注释掉就是高电平触发
+- `#define SWITCH_IR` 开启红外，注释掉就是关闭红外
+- `#define SWITCH_OLED` 开启显示屏，注释掉就是关闭显示屏
 - `#define SWITCH_DEBUG` 开启 TX0 调试输出，注释掉就是关闭调试输出
 - `#define SWITCH_NAME "SWITCH_"` mDNS 名称前缀，后面会加上 Wifi Mac 地址后三位，用于识别设备
 - `#define SWITCH_SERV "http_switch"` mDNS 服务名，用于局域网发现设备

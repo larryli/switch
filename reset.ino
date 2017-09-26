@@ -18,6 +18,10 @@ void reset_handle()
   led_reset();
   WiFi.begin("");
   WiFi.disconnect();
+  ESP.eraseConfig();
+#ifdef SWITCH_OLED
+  oled_clear();
+#endif
   delay(5000);
-  ESP.reset();
+  ESP.restart();
 }
