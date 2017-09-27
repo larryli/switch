@@ -146,9 +146,6 @@ uint8_t wifi_get_state();
 
 // Server
 void server_setup();
-void server_loop();
-void server_start();
-void server_stop();
 void server_update();
 
 // mDNS

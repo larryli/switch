@@ -138,7 +138,6 @@ static void wifi_connected()
   debug_println(WiFi.localIP());
   wifi_state = WIFI_CONNECTED;
   led_connected();
-  server_start();
   mdns_start();
 #ifdef SWITCH_OLED
   oled_qrcode();
