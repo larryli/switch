@@ -2,7 +2,6 @@
 // mDNS，局域网发现与识别
 //
 
-#include "switch.h"
 #include <ESP8266mDNS.h>
 
 static String mdns_name;

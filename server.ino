@@ -2,8 +2,6 @@
 // HTTP 服务
 //
 
-#include "switch.h"
-
 ///
 // 使用 Flash 保存字符串，节省 RAM 空间
 // @see http://espressif.com/sites/default/files/documentation/save_esp8266ex_ram_with_progmem_cn.pdf
@@ -49,10 +47,8 @@ p.querySelector('input[name=state]').value=s?0:1;p.querySelector('span').classNa
 on=on||!s;off=off||s}document.getElementById('switch-on').className=on?'':'hidden';\
 document.getElementById('switch-off').className=off?'':'hidden'}},\
 m=v=>{document.getElementsByName('switches').forEach(o=>{o.value=v})};\
-if(!!window.EventSource){var s=new EventSource('/events');\
-s.addEventListener('open',e=>{m(0)},false);s.addEventListener('error',e=>{\
-if(e.target.readyState!=EventSource.OPEN)m(0);else m(1)},false);\
-s.addEventListener('message',e=>{ok(e.data)},false)}";
+if(!!window.EventSource){var s=new EventSource('/events');s.onopen=e=>{m(0)};\
+s.onerror=e=>{if(e.target.readyState!=EventSource.OPEN)m(0);else m(1)};s.onmessage=e=>{ok(e.data)}}";
 
 static AsyncWebServer server(80);
 AsyncEventSource events("/events");

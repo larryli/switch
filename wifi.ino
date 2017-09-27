@@ -2,8 +2,6 @@
 // Wifi
 //
 
-#include "switch.h"
-
 static uint8_t wifi_state;
 
 ///
