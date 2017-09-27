@@ -71,7 +71,7 @@ void server_setup()
   server.on("/switch", HTTP_POST, server_post_switch);
   server.addHandler(&events);
   server.begin();
-  debug_print(F("[DEBUG] Server start"));
+  debug_println(F("[DEBUG] Server start"));
 }
 
 void server_update()
