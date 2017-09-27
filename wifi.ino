@@ -74,7 +74,7 @@ uint8_t wifi_get_state()
 //
 static void wifi_connect()
 {
-  debug_print(F("[DEBUG] Wifi connects: "));
+  debug_print(F("[DEBUG] Wifi connect: "));
   debug_println(WiFi.SSID());
   wifi_state = WIFI_CONNECTING;
   WiFi.begin();
