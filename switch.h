@@ -2,6 +2,7 @@
 #define _SWITCH_H
 
 #include <ESP8266WiFi.h> // @see https://github.com/esp8266/Arduino
+#include <ESPAsyncWebServer.h> // @see https://github.com/me-no-dev/ESPAsyncWebServer
 
 #define SWITCH_COUNT 2              // 继电器数量
 #define SWITCH_TRIG_LOW             // 继电器低电平触发
@@ -148,6 +149,7 @@ void server_setup();
 void server_loop();
 void server_start();
 void server_stop();
+void server_update();
 
 // mDNS
 void mdns_setup();
