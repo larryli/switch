@@ -16,6 +16,9 @@ void reset_setup()
 //
 void reset_handle()
 {
+  if (millis() < 3000) {
+    return; // 修正开发板上电时的低电平
+  }
   debug_println(F("[DEBUG] RESET: "));
   led_reset();
   WiFi.begin("");

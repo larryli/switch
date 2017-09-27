@@ -36,19 +36,18 @@ box-sizing:border-box;font-size:18px;text-align:center;text-decoration:none;colo
 form>input.off{background-color:#E64340}form>input:after{content:'';width:200%;height:200%;position:absolute;top:0;\
 left:0;border:1px solid rgba(0,0,0,0.2);transform:scale(0.5);transform-origin:0 0;box-sizing:border-box;border-radius:10px}\
 form>input{margin-top:15px}.hidden{display:none}";
-static const char TURN_JS[] PROGMEM = "var turn=t=>{var f=t.parentNode,d=new FormData();\
-Array.from(f.children).forEach(o=>{if(o.name!=undefined&&o.name!='')d.append(o.name,o.value)});\
+static const char TURN_JS[] PROGMEM = "var D=document,F=false,U=undefined,I=i=>D.getElementById(i),\
+T=(i,b)=>{I(i).className=b?'':'hidden'},turn=t=>{var f=t.parentNode,d=new FormData();\
+Array.from(f.children).forEach(o=>{if(o.name!=U&&o.name!='')d.append(o.name,o.value)});\
 var r=new XMLHttpRequest();r.onreadystatechange=()=>{if(r.readyState==4&&r.status==200){ok(r.responseText)}};\
-r.open(f.method,f.action);r.send(d);return false},turn2=(t=>turn(t.parentNode)),\
-ok=s=>{var o=JSON.parse(s);if(o.success!=undefined&&o.success==1&&o.switches!=undefined){\
-var on=false,off=false;for(var i=0;i<o.switches.length;i++){\
-var p=document.getElementById('switch-'+o.switches[i].switch),s=o.switches[i].state==1;\
+r.open(f.method,f.action);r.send(d);return F},turn2=(t=>turn(t.parentNode)),\
+ok=s=>{var o=JSON.parse(s);if(o.success!=U&&o.success==1&&o.switches!=U){\
+var on=F,off=F;o.switches.forEach(i=>{var p=I('switch-'+i.switch),s=i.state==1;\
 p.querySelector('input[name=state]').value=s?0:1;p.querySelector('span').className=s?'on':'';\
-on=on||!s;off=off||s}document.getElementById('switch-on').className=on?'':'hidden';\
-document.getElementById('switch-off').className=off?'':'hidden'}},\
-m=v=>{document.getElementsByName('switches').forEach(o=>{o.value=v})};\
-if(!!window.EventSource){var s=new EventSource('/events');s.onopen=e=>{m(0)};\
-s.onerror=e=>{if(e.target.readyState!=EventSource.OPEN)m(0);else m(1)};s.onmessage=e=>{ok(e.data)}}";
+on=on||!s;off=off||s});T('switch-on',on);T('switch-off',off)}},\
+M=v=>{D.getElementsByName('switches').forEach(o=>{o.value=v})};\
+if(!!window.EventSource){var s=new EventSource('/events');s.onopen=e=>{M(0)};\
+s.onerror=e=>{if(e.target.readyState==EventSource.OPEN)M(0);else M(1)};s.onmessage=e=>{ok(e.data)}}";
 
 static AsyncWebServer server(80);
 AsyncEventSource events("/events");
@@ -69,6 +68,12 @@ void server_setup()
   });
   server.on("/switch", HTTP_GET, server_get_switch);
   server.on("/switch", HTTP_POST, server_post_switch);
+  events.onConnect([](AsyncEventSourceClient *client){
+    String content = String(F("{\"success\":1"));
+    content += server_get_switches();
+    content += F("}");
+    client->send(content.c_str(), NULL, millis(), 1000);
+  });
   server.addHandler(&events);
   server.begin();
   debug_println(F("[DEBUG] Server start"));

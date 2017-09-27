@@ -14,7 +14,7 @@
 
 static U8G2_SSD1306_128X64_NONAME_1_SW_I2C u8g2(U8G2_R0, OLED_SCL, OLED_SDA);
 static bool refresh = true;
-static uint8_t state = OLED_HOME;
+static uint8_t oled_state = OLED_HOME;
 
 static const char TITLE[] U8X8_PROGMEM = "智 能 开 关";
 static const char SETTING[] U8X8_PROGMEM = " 设 置 ";
@@ -79,7 +79,7 @@ void oled_select()
 
 void oled_refresh()
 {
-  if (state == OLED_HOME) {
+  if (oled_state == OLED_HOME) {
     refresh = true;
   }
 }
