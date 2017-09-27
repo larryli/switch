@@ -152,8 +152,8 @@ static void server_post_switch(AsyncWebServerRequest *request)
     ret_type = (s == "0") ? 0 : 2;
   }
   if (request->hasArg("state")) {
-    String s = request->arg("state");
-    bool b = (s == "0") ? false : true;
+    String state = request->arg("state");
+    bool b = (state == "0") ? false : true;
 
     if (request->hasArg("switch")) {
       String name = request->arg("switch");
