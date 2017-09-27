@@ -40,7 +40,6 @@ void loop()
   if (wifi_loop()) {
     return;
   }
-  server_loop();
 }
 
 ///

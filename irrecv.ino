@@ -2,8 +2,6 @@
 // 红外
 //
 
-#include "switch.h"
-
 #ifdef SWITCH_IR 
 #include <IRrecv.h> // @see https://github.com/markszabo/IRremoteESP8266
 
@@ -70,6 +68,7 @@ bool irrecv_loop()
           switch_turn(i, false);
         }
         oled_refresh();
+        server_update();
         break;
       case ON_IRCODE:
         debug_println(F("[DEBUG] IR on"));
@@ -78,6 +77,7 @@ bool irrecv_loop()
           switch_turn(i, true);
         }
         oled_refresh();
+        server_update();
         break;
       case RESET_IRCODE:
         debug_println(F("[DEBUG] IR reset"));
@@ -91,6 +91,7 @@ bool irrecv_loop()
             led_switch();
             switch_toggle(i);
             oled_refresh();
+            server_update();
             break;
           }
         }
