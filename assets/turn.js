@@ -1,19 +1,20 @@
 // 提交开关操作
 // 压缩代码 http://www.minifier.org/
-var turn = (D => { // D：处理调试信息的回调，默认为空将使用 console.log 输出
-    var _ = !!D ? D : (...a) => console.log.apply(console, a), // console.log
+'use strict';
+let turn = (D => { // D：处理调试信息的回调，默认为空将使用 console.log 输出
+    let _ = !!D ? D : (...a) => console.log.apply(console, a), // console.log
         I = s => document.getElementById(s), // 指定 ID 的元素
         T = (s, b) => I(s).className = b ? '' : 'hidden', // 切换指定 ID 元素是否显示
         S = v => document.getElementsByName('switches').forEach(o => o.value = v), // 切换提交表单返回是否包含 switches
         R = s => { // 返回数据处理
-            var n = 0, // 是否显示全开
+            let n = 0, // 是否显示全开
                 f = 0, // 是否显示全关
                 o = JSON.parse(s);
             _(o, s);
             !!o.success && 1 == o.success && !!o.switches && ( // 返回数据成功且包含 switches 时才处理
                 o.switches.forEach( // 遍历 switches 数据，处理每个开关
                     i => {
-                        var t = I('switch-' + i.switch), // 指定开关的表单
+                        let t = I('switch-' + i.switch), // 指定开关的表单
                             b = 1 == i.state;
                         t.querySelector('input[name=state]').value = b ? 0 : 1; // 切换值
                         t.querySelector('span').className = b ? 'on' : ''; // 切换显示
@@ -31,7 +32,7 @@ var turn = (D => { // D：处理调试信息的回调，默认为空将使用 co
     );
 
     return (o, p) => { // 触发
-        var f = o.parentNode,
+        let f = o.parentNode,
             d = new FormData,
             r = new XMLHttpRequest;
 

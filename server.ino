@@ -27,11 +27,11 @@ void server_setup()
   server.on("/", server_root);
   server.on("/style.css", [](AsyncWebServerRequest *request) {
     debug_println(F("[DEBUG] Server receive get style.css"));
-    server_static(request, "text/css", STYLE_CSS_GZ_DATA, STYLE_CSS_GZ_LEN);
+    server_static(request, "text/css", STYLE_CSS_GZ_DATA, STYLE_CSS_GZ_LEN, STYLE_CSS_GZ_ETAG);
   });
   server.on("/turn.js", [](AsyncWebServerRequest *request) {
     debug_println(F("[DEBUG] Server receive get turn.js"));
-    server_static(request, "application/javascript", TURN_JS_GZ_DATA, TURN_JS_GZ_LEN);
+    server_static(request, "application/javascript", TURN_JS_GZ_DATA, TURN_JS_GZ_LEN, TURN_JS_GZ_ETAG);
   });
   server.on("/switch", HTTP_GET, server_get_switch);
   server.on("/switch", HTTP_POST, server_post_switch);
@@ -236,10 +236,8 @@ static String server_form2(bool show, bool state, String name)
   return content;
 }
 
-static void server_static(AsyncWebServerRequest *request, const String& type, const uint8_t * data, size_t len)
+static void server_static(AsyncWebServerRequest *request, const String& type, const uint8_t * data, size_t len, const String& etag)
 {
-  String etag = String(len);
-
   if (request->header("If-Modified-Since") == LAST_MODIFIED) {
     debug_println(F("[DEBUG] Not modified"));
     request->send(304); // Not modified

@@ -14,13 +14,15 @@ use MatthiasMullie\Minify;
 echo "///\n// server_data.h\n//\n\n";
 $date = gmdate('D, j M Y H:i:s');
 echo "static const char LAST_MODIFIED[] = \"{$date} GMT\";\n\n";
-    
+
 $file = 'style.css';
 $minifier = new Minify\CSS($file);
 $data = $minifier->gzip();
 $size =  strlen($data);
+$etag = substr(md5($data), 0, 6);
 echo "// {$file}\n";
 echo "#define STYLE_CSS_GZ_LEN {$size}\n";
+echo "#define STYLE_CSS_GZ_ETAG \"{$etag}\"\n";
 echo "static const uint8_t STYLE_CSS_GZ_DATA[] PROGMEM = {";
 for ($i = 0; $i < strlen($data); $i++) {
     if ($i % 16 == 0) {
@@ -34,8 +36,10 @@ $file = 'turn.js';
 $minifier = new Minify\JS($file);
 $data = $minifier->gzip();
 $size =  strlen($data);
+$etag = substr(md5($data), 0, 6);
 echo "// {$file}\n";
 echo "#define TURN_JS_GZ_LEN {$size}\n";
+echo "#define TURN_JS_GZ_ETAG \"{$etag}\"\n";
 echo "static const uint8_t TURN_JS_GZ_DATA[] PROGMEM = {";
 for ($i = 0; $i < strlen($data); $i++) {
     if ($i % 16 == 0) {
