@@ -134,7 +134,10 @@ form>input {
     color: #FFF;
     line-height: 2.56;
     border-radius: 5px;
-    overflow: hidden
+    overflow: hidden;
+    border-width: 0;
+    outline: 0;
+    -webkit-appearance: none;
 }
 form>input.off {
     background-color: #E64340
