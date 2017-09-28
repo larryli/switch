@@ -23,7 +23,7 @@ void led_connect()
 {
   led_tick = 0;
   digitalWrite(WIFI_LED, HIGH);
-  led_ticker.attach(0.1, led_flip_connect);
+  led_ticker.attach_ms(100, led_flip_connect);
 }
 
 ///
@@ -42,7 +42,7 @@ void led_disconnected()
 {
   led_tick = 0;
   digitalWrite(WIFI_LED, LOW);
-  led_ticker.attach(0.5, led_flip_disconnected);
+  led_ticker.attach_ms(500, led_flip_disconnected);
 }
 
 ///
@@ -51,7 +51,7 @@ void led_disconnected()
 void led_config()
 {
   digitalWrite(WIFI_LED, HIGH);
-  led_ticker.attach(0.3, led_flip);
+  led_ticker.attach_ms(300, led_flip);
 }
 
 ///
@@ -59,7 +59,7 @@ void led_config()
 //
 void led_reset()
 {
-  led_ticker.attach(0.2, led_flip);
+  led_ticker.attach_ms(200, led_flip);
 }
 
 ///
@@ -69,7 +69,7 @@ void led_switch()
 {
   if (wifi_is_connected()) {
     digitalWrite(WIFI_LED, HIGH);
-    led_ticker.attach(0.1, led_flip_switch);
+    led_ticker.once_ms(100, led_flip_switch);
   }
 }
 
@@ -100,7 +100,6 @@ static void led_flip_disconnected()
 static void led_flip_switch()
 {
   digitalWrite(WIFI_LED, LOW);
-  led_ticker.detach();
 }
 
 static void led_flip()
