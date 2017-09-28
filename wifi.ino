@@ -3,6 +3,9 @@
 //
 
 static uint8_t wifi_state;
+static uint8_t wifi_retry;
+
+#define WIFI_MAXRETRY 3
 
 ///
 // Wifi 配置
@@ -14,6 +17,7 @@ void wifi_setup()
   WiFi.setAutoReconnect(true);
   WiFi.persistent(false);
   WiFi.hostname(mdns_name);
+  wifi_retry = 0;
   if (WiFi.SSID() == "") {
     wifi_config(); // 没有配置，开始配置
   } else {
@@ -89,6 +93,7 @@ static void wifi_config()
 {
   debug_println(F("[DEBUG] Wifi config"));
   wifi_state = WIFI_CONFIG;
+  wifi_retry = WIFI_MAXRETRY;
   WiFi.persistent(true);
   WiFi.beginSmartConfig();
   led_config();
@@ -112,6 +117,10 @@ static void wifi_received()
 static void wifi_failed()
 {
   debug_println(F("[DEBUG] Wifi connect failed"));
+  if (++wifi_retry < WIFI_MAXRETRY) {
+    wifi_connect();
+    return;
+  }
   wifi_config();  // 配网
   oled_refresh();
 }
@@ -135,6 +144,7 @@ static void wifi_connected()
   debug_print(F("[DEBUG] Wifi connected, IP address: "));
   debug_println(WiFi.localIP());
   wifi_state = WIFI_CONNECTED;
+  wifi_retry = 0;
   led_connected();
   mdns_start();
 #ifdef SWITCH_OLED
