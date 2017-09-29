@@ -2,6 +2,7 @@
 // LED
 //
 
+#include "switch.h"
 #include <Ticker.h>
 
 static int _led_tick;

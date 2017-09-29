@@ -2,6 +2,8 @@
 // HTTP 服务
 //
 
+#include "switch.h"
+
 ///
 // 使用 Flash 保存字符串，节省 RAM 空间
 // @see http://espressif.com/sites/default/files/documentation/save_esp8266ex_ram_with_progmem_cn.pdf

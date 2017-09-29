@@ -2,6 +2,8 @@
 // Wifi
 //
 
+#include "switch.h"
+
 typedef enum {
   WIFI_CONNECTING,
   WIFI_CONNECTED,

@@ -2,7 +2,9 @@
 // 红外
 //
 
-#ifdef SWITCH_IR 
+#ifdef SWITCH_IR
+
+#include "switch.h"
 #include <IRrecv.h> // @see https://github.com/markszabo/IRremoteESP8266
 
 ///

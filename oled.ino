@@ -4,6 +4,7 @@
 
 #ifdef SWITCH_OLED
 
+#include "switch.h"
 #include <U8g2lib.h> // @see https://github.com/olikraus/u8g2
 #include <qrcode.h> // @see https://github.com/ricmoo/QRCode
 #include "oled_font.h"

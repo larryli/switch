@@ -3,6 +3,9 @@
 // 去掉注释可以设置相应选项
 //
 
+#ifndef _SWITCH_H
+#define _SWITCH_H
+
 //#define SWITCH_COUNT 9             // 继电器数量
 //#define SWITCH_TRIG_HIGH           // 继电器高电平触发
 //#define SWITCH_NO_IR               // 关闭红外遥控
@@ -10,9 +13,6 @@
 //#define SWITCH_NO_DEBUG            // 关闭调试输出
 //#define SWITCH_NAME "SWITCH_"      // mDNS 名称前缀
 //#define SWITCH_SERV "http_switch"  // mDNS 服务名
-
-#ifndef _SWITCH_H
-#define _SWITCH_H
 
 #include <ESP8266WiFi.h> // @see https://github.com/esp8266/Arduino
 #include <ESPAsyncWebServer.h> // @see https://github.com/me-no-dev/ESPAsyncWebServer
