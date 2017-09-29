@@ -110,7 +110,7 @@ static void _oled_reset()
   _u8g2.setDrawColor(1);
   w = _u8g2.getUTF8Width(_oled_str_reset);
   x = (128 - w) / 2;
-  _u8g2.drawBox(x, 25, w, 13);
+  _u8g2.drawBox(x, 26, w, 13);
   _u8g2.setDrawColor(0);
   _u8g2.drawUTF8(x, 37, _oled_str_reset);
 }

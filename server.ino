@@ -10,6 +10,7 @@ static const char _server_error_404[] PROGMEM = "{\"success\":0,\"message\":\"No
 static const char _server_error_422[] PROGMEM = "{\"success\":0,\"message\":\"Unprocessable Entity\"}";
 static const char _server_html_head[] PROGMEM = "<!DOCTYPE HTML>\n<html>\n<head>\n<meta charset='utf-8'>\n\
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n<title>智能开关</title>\n\
+<link rel='icon' href='/favicon.ico' type='image/x-icon'>\n\
 <link href='/style.css' rel='stylesheet'>\n</head>\n<body>\n<h1>智能开关</h1>\n";
 static const char _server_html_foot[] PROGMEM = "<script src='/turn.js'></script>\n</body>\n</html>";
 
@@ -24,12 +25,16 @@ static AsyncEventSource _events("/events");
 //
 void server_setup()
 {
-  _server.on("/", _server_root);
-  _server.on("/style.css", [](AsyncWebServerRequest *request) {
+  _server.on("/", HTTP_GET, _server_root);
+  _server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) {
+    debug_println(F("[DEBUG] Server receive get favicon.ico"));
+    _server_static(request, "image/x-icon", _server_favicon_data, SERVER_FAVICON_LEN, SERVER_FAVICON_ETAG);
+  });
+  _server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
     debug_println(F("[DEBUG] Server receive get style.css"));
     _server_static(request, "text/css", _server_style_data, SERVER_STYLE_LEN, SERVER_STYLE_ETAG);
   });
-  _server.on("/turn.js", [](AsyncWebServerRequest *request) {
+  _server.on("/turn.js", HTTP_GET, [](AsyncWebServerRequest *request) {
     debug_println(F("[DEBUG] Server receive get turn.js"));
     _server_static(request, "application/javascript", _server_turn_data, SERVER_TURN_LEN, SERVER_TURN_ETAG);
   });
