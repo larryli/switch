@@ -49,6 +49,7 @@ void switch_event(const Event e)
 {
   _switch_event(e);
   wifi_event(e);
+  mdns_event(e);
   led_event(e);
 #ifdef SWITCH_OLED
   oled_event(e);
