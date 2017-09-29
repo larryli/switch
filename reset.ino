@@ -16,7 +16,14 @@ void reset_event(const Event e)
   if (e != EVENT_RESET) {
     return;
   }
-  reset_handle();
+  // 系统重置，清除 Wifi 配置，重启
+  debug_print(F("[DEBUG] RESET: "));
+  WiFi.begin("");
+  WiFi.disconnect();
+  ESP.eraseConfig();
+  delay(1000);
+  debug_println(F("DONE!"));
+  ESP.restart();
 }
 
 ///
@@ -27,10 +34,6 @@ static void reset_handle()
   if (millis() < 3000) {
     return; // 修正开发板上电时的低电平
   }
-  debug_println(F("[DEBUG] RESET: "));
-  WiFi.begin("");
-  WiFi.disconnect();
-  ESP.eraseConfig();
-  delay(1000);
-  ESP.restart();
+  debug_println(F("[DEBUG] Button reset"));
+  switch_event(EVENT_RESET);
 }
