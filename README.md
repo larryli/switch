@@ -1,6 +1,6 @@
 # 智能开关
 
-Wifi 遥控开关，最多支持 9 路开关，高低电平触发均可。建议采用 2 路低电平触发继电器，避免外接额外处理电路。
+Wifi 遥控开关，最多支持 9 路开关，高低电平触发均可。默认采用 2 路低电平触发继电器，并开启调试。
 
 可以支持外红遥控，与 0.96 寸 I2C OLED 显示屏。
 
@@ -31,15 +31,20 @@ Wifi 遥控开关，最多支持 9 路开关，高低电平触发均可。建议
 - 默认开启的调试串口 RX 在 D9(GPIO3)（未用），TX 在 D10(GPIO1)
 - 可选的红外接收头数据 D0 接在 D5(GPIO14)
 - 可选的 I2C 显示屏 SDA 接在 D6(GPIO12)，SCL 接在 D7(GPIO13)
-- 9 路继电器顺序依次为：D1、D2、D5、D6、D7、D0、D8、D9、D10，其中 D5、D6、D7、D10 被占用将被跳过
+- 9 路继电器顺序依次为：D1、D2、D5、D6、D7、D0、D9、D8、D10，其中 D5、D6、D7、D10 被占用将被跳过
+- MTDO D8(GPIO15) 在上电时需要置低电平，使用低电平触发继电器会出现额外的激活，详见[启动进程](https://github.com/esp8266/esp8266-wiki/wiki/Boot-Process)说明
+- TX D10(GPIO1) 在上电时更是会切换高低电平，使用任何继电器都会出现额外的激活。不建议使用
+
 
 ## 软件
 
-- `#define SWITCH_COUNT 2` 继电器数量
-- `#define SWITCH_TRIG_LOW` 继电器低电平触发，注释掉就是高电平触发
-- `#define SWITCH_IR` 开启红外，注释掉就是关闭红外
-- `#define SWITCH_OLED` 开启显示屏，注释掉就是关闭显示屏
-- `#define SWITCH_DEBUG` 开启 TX0 调试输出，注释掉就是关闭调试输出
+可以去掉 [`switch.h`](switch.h) 开头的注释：
+
+- `#define SWITCH_COUNT 9` 继电器数量，默认为 2
+- `#define SWITCH_TRIG_HIGH` 继电器高电平触发，默认为低电平触发
+- `#define SWITCH_NO_IR` 关闭红外遥控，默认开启红外遥控
+- `#define SWITCH_NO_OLED` 关闭显示屏，默认开启显示屏
+- `#define SWITCH_NO_DEBUG` 关闭调试输出，默认开启 TX0 调试输出
 - `#define SWITCH_NAME "SWITCH_"` mDNS 名称前缀，后面会加上 Wifi Mac 地址后三位，用于识别设备
 - `#define SWITCH_SERV "http_switch"` mDNS 服务名，用于局域网发现设备
 
