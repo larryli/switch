@@ -83,11 +83,6 @@ static const uint8_t SWITCHES[] = {D1, D2, D5, D6, D7, D0, D8, D9, D10};
 # define SWITCH_OFF LOW
 #endif
 
-#define WIFI_CONNECTING 0
-#define WIFI_DISCONNECTED 1
-#define WIFI_CONFIG 2
-#define WIFI_CONNECTED 3
-
 static const uint8_t WIFI_LED = D4;
 static const uint8_t RESET_BTN = D3;
 
@@ -100,23 +95,59 @@ static const uint8_t OLED_SDA = D6;
 static const uint8_t OLED_SCL = D7;
 #endif
 
+typedef enum {
+  EVENT_CONNECTING,
+  EVENT_CONNECTED,
+  EVENT_FAILED,
+  EVENT_DISCONNECTED,
+  EVENT_CONFIG,
+  EVENT_RECEIVED,
+  EVENT_RESET,
+  EVENT_REFRESH,
+  EVENT_ON,
+  EVENT_OFF,
+  EVENT_1,
+  EVENT_2,
+  EVENT_3,
+  EVENT_4,
+  EVENT_5,
+  EVENT_6,
+  EVENT_7,
+  EVENT_8,
+  EVENT_9,
+  EVENT_1_ON,
+  EVENT_2_ON,
+  EVENT_3_ON,
+  EVENT_4_ON,
+  EVENT_5_ON,
+  EVENT_6_ON,
+  EVENT_7_ON,
+  EVENT_8_ON,
+  EVENT_9_ON,
+  EVENT_1_OFF,
+  EVENT_2_OFF,
+  EVENT_3_OFF,
+  EVENT_4_OFF,
+  EVENT_5_OFF,
+  EVENT_6_OFF,
+  EVENT_7_OFF,
+  EVENT_8_OFF,
+  EVENT_9_OFF,
+  EVENT_UP,
+  EVENT_DOWN,
+  EVENT_SELECT,
+} Event;
+
 // Switch
-void switch_setup();
-void switch_reset();
-bool switch_toggle(unsigned int i);
-bool switch_turn(unsigned int i, bool state);
+void switch_event(const Event e);
 
 // Led
 void led_setup();
-void led_connect();
-void led_connected();
-void led_disconnected();
-void led_config();
-void led_reset();
-void led_switch();
+void led_event(const Event e);
 
 // Reset
 void reset_setup();
+void reset_event(const Event e);
 
 #ifdef SWITCH_IR
 // IR Recv
@@ -128,28 +159,20 @@ bool irrecv_loop();
 // OLED
 void oled_setup();
 void oled_loop();
-void oled_up();
-void oled_down();
-void oled_select();
-void oled_refresh();
-void oled_qrcode();
-void oled_clear();
-#else
-# define oled_refresh()
+void oled_event(const Event e);
 #endif
 
 // Wifi
 void wifi_setup();
 bool wifi_loop();
-bool wifi_is_connected();
-uint8_t wifi_get_state();
+void wifi_event(const Event e);
 
 // Server
 void server_setup();
-void server_update();
+void server_event(const Event e);
 
 // mDNS
 void mdns_setup();
-bool mdns_start();
+void mdns_event(const Event e);
 
 #endif

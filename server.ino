@@ -6,85 +6,90 @@
 // 使用 Flash 保存字符串，节省 RAM 空间
 // @see http://espressif.com/sites/default/files/documentation/save_esp8266ex_ram_with_progmem_cn.pdf
 //
-static const char ERROR_404[] PROGMEM = "{\"success\":0,\"message\":\"Not Found\"}";
-static const char ERROR_422[] PROGMEM = "{\"success\":0,\"message\":\"Unprocessable Entity\"}";
-static const char HTML_HEAD[] PROGMEM = "<!DOCTYPE HTML>\n<html>\n<head>\n<meta charset='utf-8'>\n\
+static const char _server_error_404[] PROGMEM = "{\"success\":0,\"message\":\"Not Found\"}";
+static const char _server_error_422[] PROGMEM = "{\"success\":0,\"message\":\"Unprocessable Entity\"}";
+static const char _server_html_head[] PROGMEM = "<!DOCTYPE HTML>\n<html>\n<head>\n<meta charset='utf-8'>\n\
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n<title>智能开关</title>\n\
 <link href='/style.css' rel='stylesheet'>\n</head>\n<body>\n<h1>智能开关</h1>\n";
-static const char HTML_FOOT[] PROGMEM = "<script src='/turn.js'></script>\n</body>\n</html>";
+static const char _server_html_foot[] PROGMEM = "<script src='/turn.js'></script>\n</body>\n</html>";
 
 // CSS & JS gzip data
 #include "server_data.h"
 
-static AsyncWebServer server(80);
-AsyncEventSource events("/events");
+static AsyncWebServer _server(80);
+static AsyncEventSource _events("/events");
 
 ///
 // HTTP 服务配置
 //
 void server_setup()
 {
-  server.on("/", server_root);
-  server.on("/style.css", [](AsyncWebServerRequest *request) {
+  _server.on("/", _server_root);
+  _server.on("/style.css", [](AsyncWebServerRequest *request) {
     debug_println(F("[DEBUG] Server receive get style.css"));
-    server_static(request, "text/css", STYLE_CSS_GZ_DATA, STYLE_CSS_GZ_LEN, STYLE_CSS_GZ_ETAG);
+    _server_static(request, "text/css", _server_style_data, SERVER_STYLE_LEN, SERVER_STYLE_ETAG);
   });
-  server.on("/turn.js", [](AsyncWebServerRequest *request) {
+  _server.on("/turn.js", [](AsyncWebServerRequest *request) {
     debug_println(F("[DEBUG] Server receive get turn.js"));
-    server_static(request, "application/javascript", TURN_JS_GZ_DATA, TURN_JS_GZ_LEN, TURN_JS_GZ_ETAG);
+    _server_static(request, "application/javascript", _server_turn_data, SERVER_TURN_LEN, SERVER_TURN_ETAG);
   });
-  server.on("/switch", HTTP_GET, server_get_switch);
-  server.on("/switch", HTTP_POST, server_post_switch);
-  events.onConnect([](AsyncEventSourceClient *client){
+  _server.on("/switch", HTTP_GET, _server_get_switch);
+  _server.on("/switch", HTTP_POST, _server_post_switch);
+  _events.onConnect([](AsyncEventSourceClient *client){
     String content = String("{\"success\":1");
-    content += server_get_switches();
+
+    content += _server_get_switches();
     content += "}";
     client->send(content.c_str(), NULL, millis());
   });
-  server.addHandler(&events);
-  server.onNotFound([](AsyncWebServerRequest *request) {
+  _server.addHandler(&_events);
+  _server.onNotFound([](AsyncWebServerRequest *request) {
     request->send(404);
   });
-  server.begin();
+  _server.begin();
   debug_println(F("[DEBUG] Server start"));
 }
 
-void server_update()
+void server_event(const Event e)
 {
+  if (e != EVENT_REFRESH) {
+    return;
+  }
   String content = String("{\"success\":1");
-  content += server_get_switches();
+
+  content += _server_get_switches();
   content += "}";
-  events.send(content.c_str(), NULL, millis());
+  _events.send(content.c_str(), NULL, millis());
 }
 
-static void server_root(AsyncWebServerRequest *request)
+static void _server_root(AsyncWebServerRequest *request)
 {
   bool can_on, can_off;
-  String content = String(FPSTR(HTML_HEAD));
+  String content = String(FPSTR(_server_html_head));
 
   debug_println(F("[DEBUG] Server receive get home page"));
   can_on = can_off = false;
-  content += "<h2>开关列表</h2>\n<dl>\n";
+  content += F("<h2>开关列表</h2>\n<dl>\n");
   for (int i = 0; i < SWITCH_COUNT; i++) {
     bool state = (digitalRead(SWITCHES[i]) == SWITCH_ON);
     String name = String(i + 1);
-    content += "<div>\n<dt>开关 #";
+    content += F("<div>\n<dt>开关 #");
     content += name;
-    content += "</dt>\n<dd>";
-    content += server_form1(name, !state, state ? "关闭" : "打开");
-    content += "</dd>\n</div>\n";
+    content += F("</dt>\n<dd>");
+    content += _server_form1(name, !state, state ? F("关闭") : F("打开"));
+    content += F("</dd>\n</div>\n");
     can_on = can_on || !state;
     can_off = can_off || state;
   }
 
-  content += "</dl>\n<h2>批量开关</h2>\n";
-  content += server_form2(can_on, true, "全部打开");
-  content += server_form2(can_off, false, "全部关闭");
-  content += FPSTR(HTML_FOOT);
-  request->send(200, "text/html", content);
+  content += F("</dl>\n<h2>批量开关</h2>\n");
+  content += _server_form2(can_on, true, F("全部打开"));
+  content += _server_form2(can_off, false, F("全部关闭"));
+  content += FPSTR(_server_html_foot);
+  request->send(200, F("text/html"), content);
 }
 
-static void server_get_switch(AsyncWebServerRequest *request)
+static void _server_get_switch(AsyncWebServerRequest *request)
 {
   String content = String("{\"success\":1");
 
@@ -92,7 +97,7 @@ static void server_get_switch(AsyncWebServerRequest *request)
     String name = request->arg("switch");
     int i = name.toInt() - 1;
     if (i < 0 || i >= SWITCH_COUNT) {
-      request->send(404, "application/json", FPSTR(ERROR_404));
+      request->send(404, "application/json", FPSTR(_server_error_404));
       return;
     }
     debug_print(F("[DEBUG] Server receive get switch #"));
@@ -108,14 +113,14 @@ static void server_get_switch(AsyncWebServerRequest *request)
     return;
   }
   debug_println(F("[DEBUG] Server receive get switches"));
-  content += server_get_switches();
+  content += _server_get_switches();
   content += "}";
   debug_print(F("[DEBUG] Server send: "));
   debug_println(content);
   request->send(200, "application/json", content);
 }
 
-static void server_post_switch(AsyncWebServerRequest *request)
+static void _server_post_switch(AsyncWebServerRequest *request)
 {
   String content = String("{\"success\":1");
   int ret_type = 1;
@@ -133,54 +138,46 @@ static void server_post_switch(AsyncWebServerRequest *request)
       int i = name.toInt() - 1;
 
       if (i < 0 || i >= SWITCH_COUNT) {
-        request->send(404, "application/json", FPSTR(ERROR_404));
+        request->send(404, "application/json", FPSTR(_server_error_404));
         return;
       }
-      debug_print(F("[DEBUG] Server receive post switch #"));
+      debug_print("[DEBUG] Server receive post switch #");
       debug_print(name);
-      debug_print(F(" to "));
+      debug_print(" to ");
       debug_println(state);
-      led_switch();
-      switch_turn(i, b);
-      oled_refresh();
+      switch_event(Event(i + (b ? EVENT_1_ON : EVENT_1_OFF)));
       if (ret_type > 0) {
         content += ",\"switch\":";
         content += name;
         content += ",\"state\":";
         content += state;
         if (ret_type > 1) {
-          content += server_get_switches();
+          content += _server_get_switches();
         }
       }
       content += "}";
-      debug_print(F("[DEBUG] Server send: "));
+      debug_print("[DEBUG] Server send: ");
       debug_println(content);
       request->send(200, "application/json", content);
-      server_update();
       return;
     }
 
-    debug_print(F("[DEBUG] Server receive post switches to "));
+    debug_print("[DEBUG] Server receive post switches to ");
     debug_println(state);
-    led_switch();
-    for (int i = 0; i < SWITCH_COUNT; i++) {
-      switch_turn(i, b);
-    }
-    oled_refresh();
+    switch_event(b ? EVENT_ON : EVENT_OFF);
     if (ret_type > 0) {
-      content += server_get_switches();
+      content += _server_get_switches();
     }
     content += "}";
-    debug_print(F("[DEBUG] Server send: "));
+    debug_print("[DEBUG] Server send: ");
     debug_println(content);
     request->send(200, "application/json", content);
-    server_update();
     return;
   }
-  request->send(422, "application/json", FPSTR(ERROR_422));
+  request->send(422, "application/json", FPSTR(_server_error_422));
 }
 
-static String server_get_switches()
+static String _server_get_switches()
 {
   String content = String(",\"switches\":[");
   for (int i = 0; i < SWITCH_COUNT; i++) {
@@ -197,48 +194,48 @@ static String server_get_switches()
   return content;
 }
 
-static String server_form1(String i, bool state, String name)
+static String _server_form1(String i, bool state, String name)
 {
-  String content = String("<form action='/switch' method='post' id='switch-");
+  String content = String(F("<form action='/switch' method='post' id='switch-"));
   content += i;
-  content += "'>\n<input type='hidden' name='switches' value='1'>\n<input type='hidden' name='switch' value='";
+  content += F("'>\n<input type='hidden' name='switches' value='1'>\n<input type='hidden' name='switch' value='");
   content += i;
-  content += "'>\n<input type='hidden' name='state' value='";
-  content += state ? "1" : "0";
-  content += "'>\n";
-  content += "<label><input type='submit' value='";
+  content += F("'>\n<input type='hidden' name='state' value='");
+  content += state ? F("1") : F("0");
+  content += F("'>\n");
+  content += F("<label><input type='submit' value='");
   content += name;
-  content += "' onclick='return turn(this,1)'><span";
+  content += F("' onclick='return turn(this,1)'><span");
   if (!state) {
-    content += " class='on'";
+    content += F(" class='on'");
   }
-  content += "></span></label>\n</form>\n";
+  content += F("></span></label>\n</form>\n");
   return content;
 }
 
-static String server_form2(bool show, bool state, String name)
+static String _server_form2(bool show, bool state, String name)
 {
-  String content = String("<form action='/switch' method='post' id='switch-");
-  content += state ? "on" : "off";
-  content += "'";
+  String content = String(F("<form action='/switch' method='post' id='switch-"));
+  content += state ? F("on") : F("off");
+  content += F("'");
   if (!show) {
-    content += " class='hidden'";
+    content += F(" class='hidden'");
   }
-  content += ">\n<input type='hidden' name='switches' value='1'><input type='hidden' name='state' value='";
-  content += state ? "1" : "0";
-  content += "'>\n<input type='submit' value='";
+  content += F(">\n<input type='hidden' name='switches' value='1'><input type='hidden' name='state' value='");
+  content += state ? F("1") : F("0");
+  content += F("'>\n<input type='submit' value='");
   content += name;
-  content += "'";
+  content += F("'");
   if (!state) {
-    content += " class='off'";
+    content += F(" class='off'");
   }
-  content += " onclick='return turn(this)'>\n</form>\n";
+  content += F(" onclick='return turn(this)'>\n</form>\n");
   return content;
 }
 
-static void server_static(AsyncWebServerRequest *request, const String& type, const uint8_t * data, size_t len, const String& etag)
+static void _server_static(AsyncWebServerRequest *request, const String& type, const uint8_t * data, size_t len, const String& etag)
 {
-  if (request->header("If-Modified-Since") == LAST_MODIFIED) {
+  if (request->header("If-Modified-Since") == _server_last) {
     debug_println(F("[DEBUG] Not modified"));
     request->send(304); // Not modified
   } else if (request->hasHeader("If-None-Match") && request->header("If-None-Match").equals(etag)) {
@@ -253,7 +250,7 @@ static void server_static(AsyncWebServerRequest *request, const String& type, co
 
     debug_println(F("[DEBUG] GZIP output"));
     response->addHeader("Content-Encoding", "gzip");
-    response->addHeader("Last-Modified", LAST_MODIFIED);
+    response->addHeader("Last-Modified", _server_last);
     response->addHeader("Cache-Control", "max-age=3600");
     response->addHeader("ETag", etag);
     request->send(response);

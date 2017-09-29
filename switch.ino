@@ -10,7 +10,7 @@
 void setup()
 {
   debug_setup();
-  switch_setup();
+  _switch_setup();
   led_setup();
   reset_setup();
 #ifdef SWITCH_IR
@@ -43,9 +43,24 @@ void loop()
 }
 
 ///
+// 开关事件处理
+//
+void switch_event(const Event e)
+{
+  _switch_event(e);
+  reset_event(e);
+  wifi_event(e);
+  led_event(e);
+#ifdef SWITCH_OLED
+  oled_event(e);
+#endif
+  server_event(e);
+}
+
+///
 // 配置开关
 //
-void switch_setup()
+static void _switch_setup()
 {
   for (int i = 0; i < SWITCH_COUNT; i++) {
     pinMode(SWITCHES[i], OUTPUT);
@@ -54,11 +69,42 @@ void switch_setup()
 }
 
 ///
+// 开关自身事件处理
+//
+static void _switch_event(const Event e)
+{
+  switch (e) {
+    case EVENT_ON:
+      for (int i = 0; i < SWITCH_COUNT; i++) {
+        switch_turn(i, true);
+      }
+      break;
+    case EVENT_OFF:
+      for (int i = 0; i < SWITCH_COUNT; i++) {
+        switch_turn(i, false);
+      }
+      break;
+    default:
+      if (e >= EVENT_1 && e <= EVENT_9) {
+        switch_toggle(e - EVENT_1);
+      } else if (e >= EVENT_1_ON && e <= EVENT_9_ON) {
+        switch_turn(e - EVENT_1_ON, true);
+      } else if (e >= EVENT_1_OFF && e <= EVENT_9_OFF) {
+        switch_turn(e - EVENT_1_OFF, false);
+      } else {
+        return;
+      }
+      break;
+  }
+  switch_event(EVENT_REFRESH);
+}
+
+///
 // 切换开关状态
 // @param unsigned int i 开关索引
 // @return bool 开关是否已打开
 //
-bool switch_toggle(unsigned int i)
+static bool switch_toggle(const uint8_t i)
 {
   if (i < SWITCH_COUNT) {
     int data = !digitalRead(SWITCHES[i]);
@@ -79,7 +125,7 @@ bool switch_toggle(unsigned int i)
 // @param bool state 打开/关闭开关
 // @return bool 是否操作成功
 //
-bool switch_turn(unsigned int i, bool state)
+static bool switch_turn(const uint8_t i, const bool state)
 {
   if (i < SWITCH_COUNT) {
     int data = digitalRead(SWITCHES[i]);

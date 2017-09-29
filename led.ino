@@ -4,8 +4,9 @@
 
 #include <Ticker.h>
 
-static int led_tick;
-static Ticker led_ticker;
+static int _led_tick;
+static Ticker _led_ticker;
+static bool _led_state;  // 网络是否正常
 
 ///
 // LED 配置
@@ -14,95 +15,77 @@ void led_setup()
 {
   pinMode(WIFI_LED, OUTPUT);
   digitalWrite(WIFI_LED, LOW);
+  _led_state = false;
 }
 
-///
-// LED 正在联网，闪两下，亮 0.5s
-//
-void led_connect()
+void led_event(const Event e)
 {
-  led_tick = 0;
-  digitalWrite(WIFI_LED, HIGH);
-  led_ticker.attach_ms(100, led_flip_connect);
-}
-
-///
-// LED 联网正常，常亮
-//
-void led_connected()
-{
-  led_ticker.detach();
-  digitalWrite(WIFI_LED, LOW);
-}
-
-///
-// LED 联网错误，慢闪，亮 0.5 秒，灭 1.5 秒
-//
-void led_disconnected()
-{
-  led_tick = 0;
-  digitalWrite(WIFI_LED, LOW);
-  led_ticker.attach_ms(500, led_flip_disconnected);
-}
-
-///
-// LED 配网状态，快闪
-//
-void led_config()
-{
-  digitalWrite(WIFI_LED, HIGH);
-  led_ticker.attach_ms(300, led_flip);
-}
-
-///
-// LED 清除配置重启，超快闪
-//
-void led_reset()
-{
-  led_ticker.attach_ms(200, led_flip);
-}
-
-///
-// LED 开关动作，只闪一次，只在网络正常时使用
-//
-void led_switch()
-{
-  if (wifi_is_connected()) {
-    digitalWrite(WIFI_LED, HIGH);
-    led_ticker.once_ms(100, led_flip_switch);
+  switch (e) {
+    case EVENT_CONNECTING: // 正在联网，闪两下，亮 0.5s
+      _led_state = false;
+      _led_tick = 0;
+      digitalWrite(WIFI_LED, HIGH);
+      _led_ticker.attach_ms(100, _led_connect);
+      return;
+    case EVENT_CONNECTED: // 联网正常，常亮
+      _led_state = true;
+      _led_ticker.detach();
+      digitalWrite(WIFI_LED, LOW);
+      return;
+    case EVENT_DISCONNECTED: // 联网错误，慢闪，亮 0.5 秒，灭 1.5 秒
+      _led_state = false;
+      _led_tick = 0;
+      digitalWrite(WIFI_LED, LOW);
+      _led_ticker.attach_ms(500, _led_disconnected);
+      return;
+    case EVENT_CONFIG: // 配网状态，快闪
+      _led_state = false;
+      digitalWrite(WIFI_LED, HIGH);
+      _led_ticker.attach_ms(300, _led_flip);
+      return;
+    case EVENT_RESET: // 清除配置重启，超快闪
+      _led_state = false;
+      _led_ticker.attach_ms(200, _led_flip);
+      return;
+    case EVENT_REFRESH: // 开关动作，只闪一次，只在网络正常时使用
+      if (_led_state) {
+        digitalWrite(WIFI_LED, HIGH);
+        _led_ticker.once_ms(100, _led_refresh);
+      }
+      return;
   }
 }
 
-static void led_flip_connect()
+static void _led_connect()
 {
-  ++led_tick;
-  if (led_tick == 1 || led_tick == 3 || led_tick == 5) {
+  ++_led_tick;
+  if (_led_tick == 1 || _led_tick == 3 || _led_tick == 5) {
     digitalWrite(WIFI_LED, LOW);
-  } else if (led_tick == 2 || led_tick == 4) {
+  } else if (_led_tick == 2 || _led_tick == 4) {
     digitalWrite(WIFI_LED, HIGH);
-  } else if (led_tick >= 10) {
+  } else if (_led_tick >= 10) {
     digitalWrite(WIFI_LED, HIGH);
-    led_tick = 0;
+    _led_tick = 0;
   }
 }
 
-static void led_flip_disconnected()
+static void _led_disconnected()
 {
-  ++led_tick;
-  if (led_tick == 1) {
+  ++_led_tick;
+  if (_led_tick == 1) {
     digitalWrite(WIFI_LED, HIGH);
-  } else if (led_tick >= 4) {
+  } else if (_led_tick >= 4) {
     digitalWrite(WIFI_LED, LOW);
-    led_tick = 0;
+    _led_tick = 0;
   }
 }
 
-static void led_flip_switch()
+static void _led_refresh()
 {
   digitalWrite(WIFI_LED, LOW);
 }
 
-static void led_flip()
+static void _led_flip()
 {
   int state = digitalRead(WIFI_LED);
 
