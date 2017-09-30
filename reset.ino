@@ -26,12 +26,14 @@ void reset_event(const Event e)
   }
   // 系统重置，清除 Wifi 配置，重启
   debug_print(F("[DEBUG] RESET: "));
+  WiFi.persistent(true);
   WiFi.begin("");
   WiFi.disconnect();
-  ESP.eraseConfig();
+  bool ret = ESP.eraseConfig();
+  debug_print(ret);
   _reset_ticker.once_ms(1000, [] {
-    debug_println(F("DONE!"));
-    ESP.restart();
+    debug_println(F(" DONE!"));
+    ESP.reset();
   });
 }
 
