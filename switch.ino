@@ -75,6 +75,9 @@ static void _switch_setup()
 static void _switch_event(const Event e)
 {
   switch (e) {
+    case EVENT_RESTART:
+      ESP.restart();
+      return;
     case EVENT_ON:
       for (int i = 0; i < SWITCH_COUNT; i++) {
         switch_turn(i, true);
