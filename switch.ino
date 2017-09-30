@@ -80,21 +80,21 @@ static void _switch_event(const Event e)
       return;
     case EVENT_ON:
       for (int i = 0; i < SWITCH_COUNT; i++) {
-        switch_turn(i, true);
+        _switch_turn(i, true);
       }
       break;
     case EVENT_OFF:
       for (int i = 0; i < SWITCH_COUNT; i++) {
-        switch_turn(i, false);
+        _switch_turn(i, false);
       }
       break;
     default:
       if (e >= EVENT_1 && e <= EVENT_9) {
-        switch_toggle(e - EVENT_1);
+        _switch_toggle(e - EVENT_1);
       } else if (e >= EVENT_1_ON && e <= EVENT_9_ON) {
-        switch_turn(e - EVENT_1_ON, true);
+        _switch_turn(e - EVENT_1_ON, true);
       } else if (e >= EVENT_1_OFF && e <= EVENT_9_OFF) {
-        switch_turn(e - EVENT_1_OFF, false);
+        _switch_turn(e - EVENT_1_OFF, false);
       } else {
         return;
       }
@@ -108,7 +108,7 @@ static void _switch_event(const Event e)
 // @param unsigned int i 开关索引
 // @return bool 开关是否已打开
 //
-static bool switch_toggle(const uint8_t i)
+static bool _switch_toggle(const uint8_t i)
 {
   if (i < SWITCH_COUNT) {
     int data = !digitalRead(SWITCHES[i]);
@@ -129,7 +129,7 @@ static bool switch_toggle(const uint8_t i)
 // @param bool state 打开/关闭开关
 // @return bool 是否操作成功
 //
-static bool switch_turn(const uint8_t i, const bool state)
+static bool _switch_turn(const uint8_t i, const bool state)
 {
   if (i < SWITCH_COUNT) {
     int data = digitalRead(SWITCHES[i]);
