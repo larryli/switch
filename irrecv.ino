@@ -26,9 +26,11 @@ static const unsigned int _ircode_switches[] = {
 #define IRCODE_ON 0xFF9867
 // 红外 EQ 按键码
 #define IRCODE_RESET 0xFF906F
+#define IRCODE_HOLD_MS 2000
 
 static IRrecv _irrecv(IR_RECV);
 static decode_results _ir_results;
+static unsigned long _ir_last = 0;
 
 ///
 // 红外配置
@@ -50,6 +52,16 @@ bool irrecv_loop()
     debug_print(F("[DEBUG] IR get code: 0x"));
     debug_println(ircode, HEX);
     switch (ircode) {
+      case 0xFFFFFFFF: // repeat
+        if (_ir_last > 0) {
+          if (millis() - _ir_last > IRCODE_HOLD_MS) {
+            debug_println(F("[DEBUG] IR hold reset"));
+            switch_event(EVENT_RESET);
+            break;
+          }
+          goto _ir_not_reset_last;
+        }
+        break;
 #ifdef SWITCH_OLED
       case IRCODE_UP:
         debug_println(F("[DEBUG] IR up"));
@@ -74,8 +86,8 @@ bool irrecv_loop()
         break;
       case IRCODE_RESET:
         debug_println(F("[DEBUG] IR reset"));
-        switch_event(EVENT_RESET);
-        break;
+        _ir_last = millis();
+        goto _ir_not_reset_last;
       default:
         for (int i = 0; i < SWITCH_COUNT; i++) {
           if (ircode == _ircode_switches[i]) {
@@ -87,6 +99,8 @@ bool irrecv_loop()
         }
         break;
     }
+    _ir_last = 0;
+_ir_not_reset_last:
     _irrecv.resume();
     delay(100);
     return true;
