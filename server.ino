@@ -5,11 +5,6 @@
 // curl -F "image=@switch.bin" http://SWITCH_XXYYzZ.local/update
 
 #include "switch.h"
-<<<<<<< HEAD
-#include <ESP8266WebServer.h>
-#include <ESP8266HTTPUpdateServer.h>
-=======
->>>>>>> master
 
 ///
 // 使用 Flash 保存字符串，节省 RAM 空间
@@ -23,35 +18,17 @@ static const char _server_html_head[] PROGMEM = "<!DOCTYPE HTML>\n<html>\n<head>
 <link href='/style.css' rel='stylesheet'>\n</head>\n<body>\n<h1>智能开关</h1>\n";
 static const char _server_html_foot[] PROGMEM = "<script src='/turn.js'></script>\n</body>\n</html>";
 
-<<<<<<< HEAD
-static ESP8266WebServer server(80);
-#ifdef SWITCH_DEBUG
-static ESP8266HTTPUpdateServer update(true);
-#else
-static ESP8266HTTPUpdateServer update;
-#endif
-=======
 // CSS & JS gzip data
 #include "server_data.h"
 
 static AsyncWebServer _server(80);
 static AsyncEventSource _events("/events");
->>>>>>> master
 
 ///
 // HTTP 服务配置
 //
 void server_setup()
 {
-<<<<<<< HEAD
-  server.on("/", server_root);
-  server.on("/style.css", server_style_css);
-  server.on("/turn.js", server_turn_js);
-  server.on("/switch", HTTP_GET, server_get_switch);
-  server.on("/switch", HTTP_POST, server_post_switch);
-  update.setup(&server);
-}
-=======
   _server.on("/", HTTP_GET, _server_root);
   _server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request) {
     debug_println(F("[DEBUG] Server receive get favicon.ico"));
@@ -69,7 +46,6 @@ void server_setup()
   _server.on("/switch", HTTP_POST, _server_post_switch);
   _events.onConnect([](AsyncEventSourceClient *client){
     String content = String("{\"success\":1");
->>>>>>> master
 
     content += _server_get_switches();
     content += "}";
