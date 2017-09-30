@@ -1,0 +1,16 @@
+{
+    "name": "larryli/switch-assets",
+    "description": "Switch assets",
+    "license": "MIT",
+    "type": "project",
+    "require": {
+        "php": ">=5.5.9",
+        "matthiasmullie/minify": "*"
+    },
+    "repositories": {
+        "packagist": {
+            "type": "composer",
+            "url": "https://packagist.phpcomposer.com"
+        }
+    }
+}

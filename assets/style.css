@@ -1,0 +1,163 @@
+/* 压缩代码 http://www.minifier.org/ */
+* {
+    margin: 0;
+    padding: 0
+}
+body {
+    background-color: #f8f8f8
+}
+h1 {
+    text-align: center;
+    margin: 1em
+}
+h2 {
+    margin: .77em 0 .3em 0;
+    padding: 0 15px;
+    color: #999;
+    font-size: 14px
+}
+dl {
+    margin: 0;
+    background-color: #FFF;
+    line-height: 1.47;
+    font-size: 17px;
+    overflow: hidden;
+    position: relative
+}
+dl:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    height: 1px;
+    border-top: 1px solid #e5e5e5;
+    color: #e5e5e5;
+    transform-origin: 0 0;
+    transform: scaleY(0.5);
+    z-index: 2
+}
+dl:after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    height: 1px;
+    border-bottom: 1px solid #e5e5e5;
+    color: #e5e5e5;
+    transform-origin: 0 100%;
+    transform: scaleY(0.5);
+    z-index: 2
+}
+div {
+    padding: 10px 15px;
+    position: relative;
+    display: flex;
+    align-items: center
+}
+div:first-child:before {
+    display: none
+}
+div:before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    right: 0;
+    height: 1px;
+    border-top: 1px solid #e5e5e5;
+    color: #e5e5e5;
+    transform-origin: 0 0;
+    transform: scaleY(0.5);
+    z-index: 2
+}
+dt {
+    flex: 1
+}
+dd {
+    font-size: 0;
+    text-align: right;
+    color: #999
+}
+dd form {
+    display: inline-block
+}
+dd label {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px
+}
+dd label input {
+    display: none
+}
+dd span {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    border-radius: 34px
+}
+dd span:before {
+    position: absolute;
+    content: '';
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    border-radius: 50%
+}
+dd span.on {
+    background-color: #2196F3;
+    box-shadow: 0 0 1px #2196F3
+}
+dd span.on:before {
+    transform: translateX(26px)
+}
+form>input {
+    width: 90%;
+    border: 0;
+    background-color: #1AAD19;
+    position: relative;
+    display: block;
+    margin: 0 auto;
+    padding: 0 14px;
+    box-sizing: border-box;
+    font-size: 18px;
+    text-align: center;
+    text-decoration: none;
+    color: #FFF;
+    line-height: 2.56;
+    border-radius: 5px;
+    overflow: hidden;
+    border-width: 0;
+    outline: 0;
+    -webkit-appearance: none;
+}
+form>input.off {
+    background-color: #E64340
+}
+form>input:after {
+    content: '';
+    width: 200%;
+    height: 200%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    transform: scale(0.5);
+    transform-origin: 0 0;
+    box-sizing: border-box;
+    border-radius: 10px
+}
+form>input {
+    margin-top: 15px
+}
+.hidden {
+    display: none
+}
