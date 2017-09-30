@@ -196,6 +196,7 @@ void oled_event(const Event e)
           break;
         default:
           _oled_state = OLED_SETTING;
+          _oled_select = 0;
           break;
       }
       break;
