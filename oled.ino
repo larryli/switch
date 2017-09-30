@@ -54,6 +54,8 @@ static bool _oled_confirm;
 static char *_oled_tips;
 static QRCode _oled_qrcode;
 static uint8_t _oled_qrcodeData[56];  // (21 * 21 + 7) / 8
+#define OLED_SAVER 30
+static Ticker _oled_ticker;
 
 void oled_setup()
 {
@@ -61,6 +63,7 @@ void oled_setup()
   _oled_refresh = true;
   _oled_state = OLED_HOME;
   _oled_wifi = OLED_CONNECTING;
+  _oled_saver();
 }
 
 void oled_loop()
@@ -127,6 +130,9 @@ void oled_event(const Event e)
       _oled_state = OLED_RESET;
       break;
     case EVENT_REFRESH: // 刷新显示
+      if (_oled_state == OLED_CLOSE) {
+        return;
+      }
       break;
     case EVENT_UP:
       switch (_oled_state) {
@@ -203,7 +209,21 @@ void oled_event(const Event e)
     default:
       return;
   }
+  if (_oled_state == OLED_CLOSE) {
+    _oled_ticker.detach();
+  } else {
+    _oled_saver();
+  }
   _oled_refresh = true;
+}
+
+static void _oled_saver()
+{
+  _oled_ticker.detach();
+  _oled_ticker.once(OLED_SAVER, [] {
+    _oled_state = OLED_CLOSE;
+    _oled_refresh = true;
+  });
 }
 
 static void _oled_reset()

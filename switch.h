@@ -16,6 +16,7 @@
 
 #include <ESP8266WiFi.h> // @see https://github.com/esp8266/Arduino
 #include <ESPAsyncWebServer.h> // @see https://github.com/me-no-dev/ESPAsyncWebServer
+#include <Ticker.h>
 
 #ifndef SWITCH_NAME
 # define SWITCH_NAME "SWITCH_"       // mDNS 名称前缀

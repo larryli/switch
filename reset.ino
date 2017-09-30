@@ -3,7 +3,6 @@
 //
 
 #include "switch.h"
-#include <Ticker.h>
 
 #define RESET_HOLD_MS 3000
 static unsigned long _reset_last;

@@ -3,7 +3,6 @@
 //
 
 #include "switch.h"
-#include <Ticker.h>
 
 static int _led_tick;
 static Ticker _led_ticker;
