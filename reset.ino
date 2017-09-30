@@ -3,9 +3,11 @@
 //
 
 #include "switch.h"
+#include <Ticker.h>
 
 #define RESET_HOLD_MS 3000
 static unsigned long _reset_last;
+static Ticker _reset_ticker;
 
 ///
 // 重置按键配置
@@ -27,9 +29,10 @@ void reset_event(const Event e)
   WiFi.begin("");
   WiFi.disconnect();
   ESP.eraseConfig();
-  delay(1000);
-  debug_println(F("DONE!"));
-  ESP.restart();
+  _reset_ticker.once_ms(1000, [] {
+    debug_println(F("DONE!"));
+    ESP.restart();
+  });
 }
 
 ///
